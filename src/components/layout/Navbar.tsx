@@ -5,7 +5,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { Menu, X, BookOpen, User, LogOut, LayoutDashboard } from 'lucide-react';
 
 export function Navbar() {
-  const { user, profile, signOut } = useAuth();
+  const { user, profile, signOut, isTeacher } = useAuth();
   const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
 
@@ -32,14 +32,9 @@ export function Navbar() {
               الرئيسية
             </Link>
             {user && (
-              <>
-                <Link to="/levels" className="text-foreground/80 hover:text-foreground transition-colors">
-                  الدروس
-                </Link>
-                <Link to="/chat" className="text-foreground/80 hover:text-foreground transition-colors">
-                  المساعد الذكي
-                </Link>
-              </>
+              <Link to="/levels" className="text-foreground/80 hover:text-foreground transition-colors">
+                الدروس
+              </Link>
             )}
           </div>
 
@@ -47,7 +42,7 @@ export function Navbar() {
           <div className="hidden md:flex items-center gap-3">
             {user ? (
               <>
-                {profile?.is_teacher && (
+                {isTeacher && (
                   <Button variant="outline" size="sm" asChild>
                     <Link to="/teacher">
                       <LayoutDashboard className="w-4 h-4 ml-2" />
@@ -98,10 +93,7 @@ export function Navbar() {
                   <Link to="/levels" className="py-2 text-foreground/80 hover:text-foreground" onClick={() => setIsOpen(false)}>
                     الدروس
                   </Link>
-                  <Link to="/chat" className="py-2 text-foreground/80 hover:text-foreground" onClick={() => setIsOpen(false)}>
-                    المساعد الذكي
-                  </Link>
-                  {profile?.is_teacher && (
+                  {isTeacher && (
                     <Link to="/teacher" className="py-2 text-primary" onClick={() => setIsOpen(false)}>
                       لوحة التحكم
                     </Link>

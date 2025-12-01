@@ -11,7 +11,7 @@ import { Users, Plus, Loader2, Upload, Bell, FileText, X } from 'lucide-react';
 import { useDropzone } from 'react-dropzone';
 
 export default function TeacherDashboard() {
-  const { profile } = useAuth();
+  const { profile, isTeacher } = useAuth();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState<'students' | 'content' | 'announcements'>('students');
   const [students, setStudents] = useState<Profile[]>([]);
@@ -63,7 +63,7 @@ export default function TeacherDashboard() {
   const fetchData = async () => {
     setLoading(true);
     if (activeTab === 'students') {
-      const { data } = await supabase.from('profiles').select('*').eq('is_teacher', false);
+      const { data } = await supabase.from('profiles').select('*');
       if (data) setStudents(data as Profile[]);
     }
     setLoading(false);
@@ -129,7 +129,7 @@ export default function TeacherDashboard() {
     setSubmitting(false);
   };
 
-  if (!profile?.is_teacher) {
+  if (!isTeacher) {
     return <Layout><div className="min-h-screen flex items-center justify-center"><p>غير مصرح لك بالوصول</p></div></Layout>;
   }
 
