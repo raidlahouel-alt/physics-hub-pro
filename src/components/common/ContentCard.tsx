@@ -58,7 +58,12 @@ export function ContentCard({ content }: ContentCardProps) {
 
       {content.file_url && (
         <Button variant="outline" size="sm" className="w-full" asChild>
-          <a href={content.file_url} target="_blank" rel="noopener noreferrer">
+          <a 
+            href={content.file_url} 
+            target="_blank" 
+            rel="noopener noreferrer"
+            download
+          >
             <Download className="w-4 h-4 ml-2" />
             تحميل الملف
           </a>
