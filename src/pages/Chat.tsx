@@ -35,7 +35,13 @@ export default function Chat() {
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.error || 'فشل الاتصال بالمساعد الذكي');
+      if (response.status === 429) {
+        throw new Error('تم تجاوز الحد المسموح من الطلبات. يرجى الانتظار قليلاً ثم المحاولة مرة أخرى.');
+      }
+      if (response.status === 402) {
+        throw new Error('يرجى إعادة شحن الرصيد للاستمرار في استخدام المساعد الذكي.');
+      }
+      throw new Error(errorData.error || 'فشل الاتصال بالمساعد الذكي. يرجى المحاولة مرة أخرى.');
     }
 
     if (!response.body) throw new Error('No response body');
