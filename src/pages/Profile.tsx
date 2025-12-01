@@ -5,32 +5,21 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
-import { Payment, StudentLevel } from '@/lib/types';
-import { User, Phone, GraduationCap, Loader2, CheckCircle, Clock, XCircle } from 'lucide-react';
-import { format } from 'date-fns';
-import { ar } from 'date-fns/locale';
+import { StudentLevel } from '@/lib/types';
+import { User, Phone, GraduationCap, Loader2 } from 'lucide-react';
 
 const levelOptions: { value: StudentLevel; label: string }[] = [
   { value: 'second_year', label: 'السنة الثانية ثانوي' },
   { value: 'baccalaureate', label: 'البكالوريا' },
 ];
 
-const statusConfig = {
-  pending: { label: 'قيد المراجعة', color: 'text-warning', icon: Clock },
-  confirmed: { label: 'مؤكد', color: 'text-success', icon: CheckCircle },
-  rejected: { label: 'مرفوض', color: 'text-destructive', icon: XCircle },
-};
-
 export default function Profile() {
-  const { profile, updateProfile, user } = useAuth();
+  const { profile, updateProfile } = useAuth();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [fullName, setFullName] = useState('');
   const [phone, setPhone] = useState('');
   const [level, setLevel] = useState<StudentLevel | ''>('');
-  const [payments, setPayments] = useState<Payment[]>([]);
-  const [loadingPayments, setLoadingPayments] = useState(true);
 
   useEffect(() => {
     if (profile) {
@@ -39,25 +28,6 @@ export default function Profile() {
       setLevel(profile.level || '');
     }
   }, [profile]);
-
-  useEffect(() => {
-    const fetchPayments = async () => {
-      if (!user) return;
-      
-      const { data, error } = await supabase
-        .from('payments')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false });
-
-      if (!error && data) {
-        setPayments(data as Payment[]);
-      }
-      setLoadingPayments(false);
-    };
-
-    fetchPayments();
-  }, [user]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -99,7 +69,7 @@ export default function Profile() {
             </div>
 
             {/* Profile Form */}
-            <div className="glass-card p-6 mb-8">
+            <div className="glass-card p-6">
               <h2 className="font-semibold text-foreground mb-6">معلوماتك الشخصية</h2>
               <form onSubmit={handleSubmit} className="space-y-5">
                 <div className="space-y-2">
@@ -155,47 +125,6 @@ export default function Profile() {
                   حفظ التغييرات
                 </Button>
               </form>
-            </div>
-
-            {/* Payment History */}
-            <div className="glass-card p-6">
-              <h2 className="font-semibold text-foreground mb-6">سجل المدفوعات</h2>
-              {loadingPayments ? (
-                <div className="flex justify-center py-8">
-                  <Loader2 className="w-6 h-6 animate-spin text-primary" />
-                </div>
-              ) : payments.length === 0 ? (
-                <p className="text-center text-muted-foreground py-8">
-                  لا توجد مدفوعات بعد
-                </p>
-              ) : (
-                <div className="space-y-3">
-                  {payments.map((payment) => {
-                    const status = statusConfig[payment.status];
-                    const StatusIcon = status.icon;
-                    return (
-                      <div
-                        key={payment.id}
-                        className="flex items-center justify-between p-4 rounded-lg bg-secondary"
-                      >
-                        <div>
-                          <div className="font-medium text-foreground">{payment.month_paid_for}</div>
-                          <div className="text-xs text-muted-foreground">
-                            {format(new Date(payment.created_at), 'dd MMMM yyyy', { locale: ar })}
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-4">
-                          <span className="font-semibold text-foreground">{payment.amount} دج</span>
-                          <div className={`flex items-center gap-1 ${status.color}`}>
-                            <StatusIcon className="w-4 h-4" />
-                            <span className="text-sm">{status.label}</span>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
             </div>
           </div>
         </div>

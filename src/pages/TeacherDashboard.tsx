@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Layout } from '@/components/layout/Layout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -6,17 +6,15 @@ import { Label } from '@/components/ui/label';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
-import { Profile, Payment, ContentType, StudentLevel } from '@/lib/types';
-import { Users, CreditCard, Plus, Loader2, CheckCircle, XCircle, Upload, Bell } from 'lucide-react';
-import { format } from 'date-fns';
-import { ar } from 'date-fns/locale';
+import { Profile, ContentType, StudentLevel } from '@/lib/types';
+import { Users, Plus, Loader2, Upload, Bell, FileText, X } from 'lucide-react';
+import { useDropzone } from 'react-dropzone';
 
 export default function TeacherDashboard() {
   const { profile } = useAuth();
   const { toast } = useToast();
-  const [activeTab, setActiveTab] = useState<'students' | 'payments' | 'content' | 'announcements'>('students');
+  const [activeTab, setActiveTab] = useState<'students' | 'content' | 'announcements'>('students');
   const [students, setStudents] = useState<Profile[]>([]);
-  const [payments, setPayments] = useState<(Payment & { profile?: Profile })[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Content form
@@ -33,6 +31,31 @@ export default function TeacherDashboard() {
   const [annContent, setAnnContent] = useState('');
   const [annLevel, setAnnLevel] = useState<StudentLevel | ''>('');
 
+  // Dropzone for PDF upload
+  const onDrop = useCallback((acceptedFiles: File[]) => {
+    if (acceptedFiles.length > 0) {
+      const file = acceptedFiles[0];
+      if (file.type === 'application/pdf') {
+        setContentFile(file);
+      } else {
+        toast({
+          title: 'خطأ',
+          description: 'يرجى رفع ملف PDF فقط',
+          variant: 'destructive',
+        });
+      }
+    }
+  }, [toast]);
+
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    onDrop,
+    accept: {
+      'application/pdf': ['.pdf']
+    },
+    maxFiles: 1,
+    multiple: false
+  });
+
   useEffect(() => {
     fetchData();
   }, [activeTab]);
@@ -42,27 +65,8 @@ export default function TeacherDashboard() {
     if (activeTab === 'students') {
       const { data } = await supabase.from('profiles').select('*').eq('is_teacher', false);
       if (data) setStudents(data as Profile[]);
-    } else if (activeTab === 'payments') {
-      const { data } = await supabase.from('payments').select('*').order('created_at', { ascending: false });
-      if (data) {
-        const paymentsWithProfiles = await Promise.all(
-          (data as Payment[]).map(async (p) => {
-            const { data: prof } = await supabase.from('profiles').select('*').eq('user_id', p.user_id).single();
-            return { ...p, profile: prof as Profile };
-          })
-        );
-        setPayments(paymentsWithProfiles);
-      }
     }
     setLoading(false);
-  };
-
-  const updatePaymentStatus = async (id: string, status: 'confirmed' | 'rejected') => {
-    const { error } = await supabase.from('payments').update({ status, confirmed_at: new Date().toISOString() }).eq('id', id);
-    if (!error) {
-      toast({ title: status === 'confirmed' ? 'تم تأكيد الدفع' : 'تم رفض الدفع' });
-      fetchData();
-    }
   };
 
   const handleAddContent = async (e: React.FormEvent) => {
@@ -88,7 +92,15 @@ export default function TeacherDashboard() {
     });
     if (!error) {
       toast({ title: 'تمت الإضافة بنجاح' });
-      setContentTitle(''); setContentDesc(''); setContentFile(null);
+      setContentTitle(''); 
+      setContentDesc(''); 
+      setContentFile(null);
+    } else {
+      toast({ 
+        title: 'خطأ في الإضافة', 
+        description: error.message,
+        variant: 'destructive' 
+      });
     }
     setSubmitting(false);
   };
@@ -104,7 +116,15 @@ export default function TeacherDashboard() {
     });
     if (!error) {
       toast({ title: 'تم نشر الإعلان' });
-      setAnnTitle(''); setAnnContent(''); setAnnLevel('');
+      setAnnTitle(''); 
+      setAnnContent(''); 
+      setAnnLevel('');
+    } else {
+      toast({ 
+        title: 'خطأ في النشر', 
+        description: error.message,
+        variant: 'destructive' 
+      });
     }
     setSubmitting(false);
   };
@@ -120,8 +140,11 @@ export default function TeacherDashboard() {
           <h1 className="text-3xl font-bold gradient-text mb-8">لوحة تحكم الأستاذ</h1>
 
           <div className="flex flex-wrap gap-3 mb-8">
-            {[{ id: 'students', label: 'الطلاب', icon: Users }, { id: 'payments', label: 'المدفوعات', icon: CreditCard },
-              { id: 'content', label: 'إضافة محتوى', icon: Plus }, { id: 'announcements', label: 'الإعلانات', icon: Bell }].map((tab) => (
+            {[
+              { id: 'students', label: 'الطلاب', icon: Users }, 
+              { id: 'content', label: 'إضافة محتوى', icon: Plus }, 
+              { id: 'announcements', label: 'الإعلانات', icon: Bell }
+            ].map((tab) => (
               <Button key={tab.id} variant={activeTab === tab.id ? 'default' : 'outline'} onClick={() => setActiveTab(tab.id as typeof activeTab)}>
                 <tab.icon className="w-4 h-4 ml-2" />{tab.label}
               </Button>
@@ -140,33 +163,6 @@ export default function TeacherDashboard() {
                         <div className="text-xs text-muted-foreground">{s.level === 'second_year' ? 'ثانية ثانوي' : s.level === 'baccalaureate' ? 'بكالوريا' : 'غير محدد'}</div>
                       </div>
                       <div className="text-sm text-muted-foreground">{s.phone || '-'}</div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-
-          {activeTab === 'payments' && (
-            <div className="glass-card p-6">
-              <h2 className="font-semibold mb-4">طلبات الدفع</h2>
-              {loading ? <Loader2 className="w-6 h-6 animate-spin mx-auto" /> : (
-                <div className="space-y-3">
-                  {payments.map((p) => (
-                    <div key={p.id} className="flex items-center justify-between p-4 bg-secondary rounded-lg">
-                      <div>
-                        <div className="font-medium">{p.profile?.full_name || 'غير معروف'}</div>
-                        <div className="text-xs text-muted-foreground">{p.month_paid_for} - {format(new Date(p.created_at), 'dd/MM/yyyy', { locale: ar })}</div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="font-semibold">{p.amount} دج</span>
-                        {p.status === 'pending' ? (
-                          <>
-                            <Button size="sm" variant="success" onClick={() => updatePaymentStatus(p.id, 'confirmed')}><CheckCircle className="w-4 h-4" /></Button>
-                            <Button size="sm" variant="destructive" onClick={() => updatePaymentStatus(p.id, 'rejected')}><XCircle className="w-4 h-4" /></Button>
-                          </>
-                        ) : <span className={p.status === 'confirmed' ? 'text-success' : 'text-destructive'}>{p.status === 'confirmed' ? 'مؤكد' : 'مرفوض'}</span>}
-                      </div>
                     </div>
                   ))}
                 </div>
@@ -193,15 +189,59 @@ export default function TeacherDashboard() {
                   </div>
                 </div>
                 <div><Label>الصعوبة (1-3)</Label><Input type="number" min={1} max={3} value={contentDifficulty} onChange={(e) => setContentDifficulty(+e.target.value)} /></div>
-                <div><Label>الملف PDF</Label>
-                  <div className="border-2 border-dashed border-border rounded-lg p-4 text-center">
-                    <input type="file" accept=".pdf" className="hidden" id="file" onChange={(e) => setContentFile(e.target.files?.[0] || null)} />
-                    <label htmlFor="file" className="cursor-pointer flex items-center justify-center gap-2 text-muted-foreground">
-                      <Upload className="w-5 h-5" />{contentFile ? contentFile.name : 'اختر ملف'}
-                    </label>
+                
+                {/* Drag and Drop Area */}
+                <div>
+                  <Label>الملف PDF</Label>
+                  <div
+                    {...getRootProps()}
+                    className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
+                      isDragActive 
+                        ? 'border-primary bg-primary/10' 
+                        : contentFile 
+                        ? 'border-success bg-success/10' 
+                        : 'border-border hover:border-primary/50'
+                    }`}
+                  >
+                    <input {...getInputProps()} />
+                    {contentFile ? (
+                      <div className="flex items-center justify-center gap-3">
+                        <FileText className="w-8 h-8 text-success" />
+                        <div className="flex-1 text-right">
+                          <p className="font-medium text-foreground">{contentFile.name}</p>
+                          <p className="text-xs text-muted-foreground">{(contentFile.size / 1024 / 1024).toFixed(2)} MB</p>
+                        </div>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setContentFile(null);
+                          }}
+                        >
+                          <X className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    ) : (
+                      <>
+                        <Upload className="w-10 h-10 mx-auto mb-3 text-muted-foreground" />
+                        {isDragActive ? (
+                          <p className="text-primary">أفلت الملف هنا...</p>
+                        ) : (
+                          <>
+                            <p className="text-foreground font-medium mb-1">اسحب وأفلت ملف PDF هنا</p>
+                            <p className="text-sm text-muted-foreground">أو انقر للاختيار</p>
+                          </>
+                        )}
+                      </>
+                    )}
                   </div>
                 </div>
-                <Button type="submit" variant="hero" className="w-full" disabled={submitting}>{submitting && <Loader2 className="w-4 h-4 animate-spin ml-2" />}إضافة</Button>
+
+                <Button type="submit" variant="hero" className="w-full" disabled={submitting}>
+                  {submitting && <Loader2 className="w-4 h-4 animate-spin ml-2" />}إضافة
+                </Button>
               </form>
             </div>
           )}
@@ -217,7 +257,9 @@ export default function TeacherDashboard() {
                     <option value="">الكل</option><option value="second_year">ثانية ثانوي</option><option value="baccalaureate">بكالوريا</option>
                   </select>
                 </div>
-                <Button type="submit" variant="hero" className="w-full" disabled={submitting}>{submitting && <Loader2 className="w-4 h-4 animate-spin ml-2" />}نشر الإعلان</Button>
+                <Button type="submit" variant="hero" className="w-full" disabled={submitting}>
+                  {submitting && <Loader2 className="w-4 h-4 animate-spin ml-2" />}نشر الإعلان
+                </Button>
               </form>
             </div>
           )}
