@@ -88,7 +88,6 @@ export type Database = {
           created_at: string | null
           full_name: string
           id: string
-          is_teacher: boolean | null
           level: Database["public"]["Enums"]["student_level"] | null
           phone: string | null
           updated_at: string | null
@@ -98,7 +97,6 @@ export type Database = {
           created_at?: string | null
           full_name: string
           id?: string
-          is_teacher?: boolean | null
           level?: Database["public"]["Enums"]["student_level"] | null
           phone?: string | null
           updated_at?: string | null
@@ -108,10 +106,30 @@ export type Database = {
           created_at?: string | null
           full_name?: string
           id?: string
-          is_teacher?: boolean | null
           level?: Database["public"]["Enums"]["student_level"] | null
           phone?: string | null
           updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          created_at: string | null
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
           user_id?: string
         }
         Relationships: []
@@ -121,9 +139,16 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
+      app_role: "teacher" | "student"
       content_type: "lesson" | "summary" | "exercise"
       payment_method: "ccp" | "golden_card"
       payment_status: "pending" | "confirmed" | "rejected"
@@ -255,6 +280,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      app_role: ["teacher", "student"],
       content_type: ["lesson", "summary", "exercise"],
       payment_method: ["ccp", "golden_card"],
       payment_status: ["pending", "confirmed", "rejected"],

@@ -7,7 +7,6 @@ export interface Profile {
   full_name: string;
   phone: string | null;
   level: StudentLevel | null;
-  is_teacher: boolean;
   created_at: string;
   updated_at: string;
 }
