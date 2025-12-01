@@ -83,48 +83,6 @@ export type Database = {
         }
         Relationships: []
       }
-      payments: {
-        Row: {
-          amount: number
-          confirmed_at: string | null
-          confirmed_by: string | null
-          created_at: string | null
-          id: string
-          month_paid_for: string
-          payment_method: Database["public"]["Enums"]["payment_method"]
-          receipt_url: string | null
-          status: Database["public"]["Enums"]["payment_status"] | null
-          transaction_reference: string | null
-          user_id: string
-        }
-        Insert: {
-          amount?: number
-          confirmed_at?: string | null
-          confirmed_by?: string | null
-          created_at?: string | null
-          id?: string
-          month_paid_for: string
-          payment_method: Database["public"]["Enums"]["payment_method"]
-          receipt_url?: string | null
-          status?: Database["public"]["Enums"]["payment_status"] | null
-          transaction_reference?: string | null
-          user_id: string
-        }
-        Update: {
-          amount?: number
-          confirmed_at?: string | null
-          confirmed_by?: string | null
-          created_at?: string | null
-          id?: string
-          month_paid_for?: string
-          payment_method?: Database["public"]["Enums"]["payment_method"]
-          receipt_url?: string | null
-          status?: Database["public"]["Enums"]["payment_status"] | null
-          transaction_reference?: string | null
-          user_id?: string
-        }
-        Relationships: []
-      }
       profiles: {
         Row: {
           created_at: string | null

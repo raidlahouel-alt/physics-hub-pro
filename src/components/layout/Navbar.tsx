@@ -39,9 +39,6 @@ export function Navbar() {
                 <Link to="/chat" className="text-foreground/80 hover:text-foreground transition-colors">
                   المساعد الذكي
                 </Link>
-                <Link to="/payment" className="text-foreground/80 hover:text-foreground transition-colors">
-                  الدفع
-                </Link>
               </>
             )}
           </div>
@@ -103,9 +100,6 @@ export function Navbar() {
                   </Link>
                   <Link to="/chat" className="py-2 text-foreground/80 hover:text-foreground" onClick={() => setIsOpen(false)}>
                     المساعد الذكي
-                  </Link>
-                  <Link to="/payment" className="py-2 text-foreground/80 hover:text-foreground" onClick={() => setIsOpen(false)}>
-                    الدفع
                   </Link>
                   {profile?.is_teacher && (
                     <Link to="/teacher" className="py-2 text-primary" onClick={() => setIsOpen(false)}>

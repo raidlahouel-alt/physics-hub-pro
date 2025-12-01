@@ -9,7 +9,6 @@ import Auth from "./pages/Auth";
 import Levels from "./pages/Levels";
 import ContentPage from "./pages/ContentPage";
 import Chat from "./pages/Chat";
-import Payment from "./pages/Payment";
 import Profile from "./pages/Profile";
 import TeacherDashboard from "./pages/TeacherDashboard";
 import NotFound from "./pages/NotFound";
@@ -29,7 +28,6 @@ const App = () => (
             <Route path="/levels" element={<Levels />} />
             <Route path="/content/:level" element={<ContentPage />} />
             <Route path="/chat" element={<Chat />} />
-            <Route path="/payment" element={<Payment />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/teacher" element={<TeacherDashboard />} />
             <Route path="*" element={<NotFound />} />
