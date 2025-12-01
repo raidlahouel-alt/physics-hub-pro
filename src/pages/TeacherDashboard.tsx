@@ -78,8 +78,13 @@ export default function TeacherDashboard() {
       }
     }
     const { error } = await supabase.from('content').insert({
-      title: contentTitle, description: contentDesc, content_type: contentType,
-      level: contentLevel, difficulty: contentDifficulty, file_url: fileUrl
+      title: contentTitle, 
+      description: contentDesc, 
+      content_type: contentType,
+      level: contentLevel, 
+      difficulty: contentDifficulty, 
+      file_url: fileUrl,
+      created_by: profile?.user_id
     });
     if (!error) {
       toast({ title: 'تمت الإضافة بنجاح' });
@@ -92,7 +97,10 @@ export default function TeacherDashboard() {
     e.preventDefault();
     setSubmitting(true);
     const { error } = await supabase.from('announcements').insert({
-      title: annTitle, content: annContent, level: annLevel || null
+      title: annTitle, 
+      content: annContent, 
+      level: annLevel || null,
+      created_by: profile?.user_id
     });
     if (!error) {
       toast({ title: 'تم نشر الإعلان' });
