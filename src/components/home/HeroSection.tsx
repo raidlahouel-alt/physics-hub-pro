@@ -36,7 +36,6 @@ export function HeroSection() {
           {/* Subtitle */}
           <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto mb-10 animate-slide-up" style={{ animationDelay: '0.2s' }}>
             دروس شاملة، ملخصات مركزة، وتمارين متنوعة لطلاب السنة الثانية ثانوي والبكالوريا
-            مع مساعد ذكي للإجابة على جميع أسئلتك
           </p>
 
           {/* CTA Buttons */}
@@ -84,8 +83,8 @@ export function HeroSection() {
               <div className="text-sm text-muted-foreground">دروس وتمارين</div>
             </div>
             <div className="text-center">
-              <div className="text-3xl md:text-4xl font-bold gradient-text">AI</div>
-              <div className="text-sm text-muted-foreground">مساعد ذكي</div>
+              <div className="text-3xl md:text-4xl font-bold gradient-text">24/7</div>
+              <div className="text-sm text-muted-foreground">متاح دائماً</div>
             </div>
           </div>
         </div>

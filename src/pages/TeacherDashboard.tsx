@@ -7,7 +7,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { Profile, ContentType, StudentLevel } from '@/lib/types';
-import { Users, Plus, Loader2, Upload, Bell, FileText, X } from 'lucide-react';
+import { Users, Plus, Loader2, Upload, Bell, FileText, X, Trash2 } from 'lucide-react';
 import { useDropzone } from 'react-dropzone';
 
 export default function TeacherDashboard() {
@@ -129,6 +129,23 @@ export default function TeacherDashboard() {
     setSubmitting(false);
   };
 
+  const handleDeleteStudent = async (studentId: string) => {
+    if (!confirm('هل أنت متأكد من حذف هذا الطالب؟')) return;
+    
+    const { error } = await supabase.from('profiles').delete().eq('id', studentId);
+    
+    if (!error) {
+      toast({ title: 'تم حذف الطالب بنجاح' });
+      fetchData();
+    } else {
+      toast({ 
+        title: 'خطأ في الحذف', 
+        description: error.message,
+        variant: 'destructive' 
+      });
+    }
+  };
+
   if (!isTeacher) {
     return <Layout><div className="min-h-screen flex items-center justify-center"><p>غير مصرح لك بالوصول</p></div></Layout>;
   }
@@ -158,11 +175,22 @@ export default function TeacherDashboard() {
                 <div className="space-y-3">
                   {students.map((s) => (
                     <div key={s.id} className="flex items-center justify-between p-4 bg-secondary rounded-lg">
-                      <div>
+                      <div className="flex-1">
                         <div className="font-medium">{s.full_name}</div>
-                        <div className="text-xs text-muted-foreground">{s.level === 'second_year' ? 'ثانية ثانوي' : s.level === 'baccalaureate' ? 'بكالوريا' : 'غير محدد'}</div>
+                        <div className="text-xs text-muted-foreground">
+                          {s.level === 'second_year' ? 'ثانية ثانوي' : s.level === 'baccalaureate' ? 'بكالوريا' : 'غير محدد'}
+                          {' • '}
+                          {s.phone || 'لا يوجد رقم'}
+                        </div>
                       </div>
-                      <div className="text-sm text-muted-foreground">{s.phone || '-'}</div>
+                      <Button 
+                        variant="ghost" 
+                        size="icon"
+                        onClick={() => handleDeleteStudent(s.id)}
+                        className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
                     </div>
                   ))}
                 </div>
