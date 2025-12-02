@@ -1,4 +1,4 @@
-import { BookOpen, CreditCard, Bell, FileText, Star } from 'lucide-react';
+import { BookOpen, Bell, FileText, Star } from 'lucide-react';
 
 const features = [
   {
@@ -20,11 +20,6 @@ const features = [
     icon: Bell,
     title: 'إعلانات فورية',
     description: 'تنبيهات فورية عن مواعيد الدروس وأي تغييرات في الجدول'
-  },
-  {
-    icon: CreditCard,
-    title: 'دفع سهل',
-    description: 'إمكانية الدفع عبر CCP أو البطاقة الذهبية بكل سهولة'
   }
 ];
 
