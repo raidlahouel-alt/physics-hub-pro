@@ -29,12 +29,6 @@ export function Footer() {
               <Link to="/levels" className="text-muted-foreground hover:text-foreground transition-colors text-sm">
                 الدروس
               </Link>
-              <Link to="/chat" className="text-muted-foreground hover:text-foreground transition-colors text-sm">
-                المساعد الذكي
-              </Link>
-              <Link to="/payment" className="text-muted-foreground hover:text-foreground transition-colors text-sm">
-                الدفع
-              </Link>
             </div>
           </div>
 
