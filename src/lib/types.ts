@@ -33,8 +33,3 @@ export interface Announcement {
   created_by: string | null;
   created_at: string;
 }
-
-export interface ChatMessage {
-  role: 'user' | 'assistant';
-  content: string;
-}
