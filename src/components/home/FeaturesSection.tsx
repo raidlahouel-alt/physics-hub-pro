@@ -1,4 +1,4 @@
-import { BookOpen, Brain, CreditCard, Bell, FileText, Star } from 'lucide-react';
+import { BookOpen, CreditCard, Bell, FileText, Star } from 'lucide-react';
 
 const features = [
   {
@@ -15,11 +15,6 @@ const features = [
     icon: Star,
     title: 'تمارين متدرجة',
     description: 'تمارين بمستويات صعوبة مختلفة من نجمة إلى ثلاث نجوم'
-  },
-  {
-    icon: Brain,
-    title: 'مساعد ذكي',
-    description: 'شات بوت ذكي يجيب على جميع أسئلتك في الفيزياء على مدار الساعة'
   },
   {
     icon: Bell,

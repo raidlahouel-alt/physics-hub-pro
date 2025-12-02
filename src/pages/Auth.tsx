@@ -6,12 +6,13 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, BookOpen, Mail, Lock, User } from 'lucide-react';
+import { Loader2, BookOpen, Mail, Lock, User, Phone } from 'lucide-react';
 import { z } from 'zod';
 
 const loginSchema = z.object({
   email: z.string().email('البريد الإلكتروني غير صالح'),
   password: z.string().min(6, 'كلمة المرور يجب أن تكون 6 أحرف على الأقل'),
+  phone: z.string().min(10, 'رقم الهاتف يجب أن يكون 10 أرقام على الأقل').regex(/^[0-9]+$/, 'رقم الهاتف يجب أن يحتوي على أرقام فقط'),
 });
 
 const signupSchema = loginSchema.extend({
@@ -24,6 +25,7 @@ export default function Auth() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
+  const [phone, setPhone] = useState('');
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   
@@ -44,7 +46,7 @@ export default function Auth() {
 
     try {
       if (isLogin) {
-        const result = loginSchema.safeParse({ email, password });
+        const result = loginSchema.safeParse({ email, password, phone });
         if (!result.success) {
           const fieldErrors: Record<string, string> = {};
           result.error.errors.forEach(err => {
@@ -72,7 +74,7 @@ export default function Auth() {
           navigate('/');
         }
       } else {
-        const result = signupSchema.safeParse({ email, password, fullName });
+        const result = signupSchema.safeParse({ email, password, phone, fullName });
         if (!result.success) {
           const fieldErrors: Record<string, string> = {};
           result.error.errors.forEach(err => {
@@ -83,7 +85,7 @@ export default function Auth() {
           return;
         }
 
-        const { error } = await signUp(email, password, fullName);
+        const { error } = await signUp(email, password, fullName, phone);
         if (error) {
           let message = error.message;
           if (error.message.includes('already registered')) {
@@ -187,6 +189,25 @@ export default function Auth() {
                 </div>
                 {errors.password && (
                   <p className="text-sm text-destructive">{errors.password}</p>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="phone">رقم الهاتف *</Label>
+                <div className="relative">
+                  <Phone className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                  <Input
+                    id="phone"
+                    type="tel"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    placeholder="0555123456"
+                    className="pr-10"
+                    dir="ltr"
+                  />
+                </div>
+                {errors.phone && (
+                  <p className="text-sm text-destructive">{errors.phone}</p>
                 )}
               </div>
 

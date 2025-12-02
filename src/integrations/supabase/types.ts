@@ -89,7 +89,8 @@ export type Database = {
           full_name: string
           id: string
           level: Database["public"]["Enums"]["student_level"] | null
-          phone: string | null
+          phone: string
+          phone_verified: boolean | null
           updated_at: string | null
           user_id: string
         }
@@ -98,7 +99,8 @@ export type Database = {
           full_name: string
           id?: string
           level?: Database["public"]["Enums"]["student_level"] | null
-          phone?: string | null
+          phone: string
+          phone_verified?: boolean | null
           updated_at?: string | null
           user_id: string
         }
@@ -107,7 +109,8 @@ export type Database = {
           full_name?: string
           id?: string
           level?: Database["public"]["Enums"]["student_level"] | null
-          phone?: string | null
+          phone?: string
+          phone_verified?: boolean | null
           updated_at?: string | null
           user_id?: string
         }
