@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
-import { Menu, X, BookOpen, User, LogOut, LayoutDashboard } from 'lucide-react';
+import { Menu, X, BookOpen, User, LogOut, LayoutDashboard, Shield } from 'lucide-react';
 
 export function Navbar() {
   const { user, profile, signOut, isTeacher } = useAuth();
@@ -43,12 +43,20 @@ export function Navbar() {
             {user ? (
               <>
                 {isTeacher && (
-                  <Button variant="outline" size="sm" asChild>
-                    <Link to="/teacher">
-                      <LayoutDashboard className="w-4 h-4 ml-2" />
-                      لوحة التحكم
-                    </Link>
-                  </Button>
+                  <>
+                    <Button variant="outline" size="sm" asChild>
+                      <Link to="/teacher">
+                        <LayoutDashboard className="w-4 h-4 ml-2" />
+                        لوحة التحكم
+                      </Link>
+                    </Button>
+                    <Button variant="outline" size="sm" asChild>
+                      <Link to="/manage-teachers">
+                        <Shield className="w-4 h-4 ml-2" />
+                        إدارة المعلمين
+                      </Link>
+                    </Button>
+                  </>
                 )}
                 <Button variant="ghost" size="sm" asChild>
                   <Link to="/profile">
@@ -94,9 +102,14 @@ export function Navbar() {
                     الدروس
                   </Link>
                   {isTeacher && (
-                    <Link to="/teacher" className="py-2 text-primary" onClick={() => setIsOpen(false)}>
-                      لوحة التحكم
-                    </Link>
+                    <>
+                      <Link to="/teacher" className="py-2 text-primary" onClick={() => setIsOpen(false)}>
+                        لوحة التحكم
+                      </Link>
+                      <Link to="/manage-teachers" className="py-2 text-primary" onClick={() => setIsOpen(false)}>
+                        إدارة المعلمين
+                      </Link>
+                    </>
                   )}
                   <Link to="/profile" className="py-2 text-foreground/80 hover:text-foreground" onClick={() => setIsOpen(false)}>
                     حسابي
