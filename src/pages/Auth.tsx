@@ -9,6 +9,7 @@ import { useToast } from '@/hooks/use-toast';
 import { StudentLevel } from '@/lib/types';
 import { Loader2, BookOpen, Mail, Lock, User, Phone, GraduationCap } from 'lucide-react';
 import { z } from 'zod';
+import { PhoneVerification } from '@/components/PhoneVerification';
 
 const loginSchema = z.object({
   email: z.string().email('البريد الإلكتروني غير صالح'),
@@ -33,6 +34,8 @@ export default function Auth() {
   const [level, setLevel] = useState<StudentLevel | ''>('');
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [showPhoneVerification, setShowPhoneVerification] = useState(false);
+  const [phoneVerified, setPhoneVerified] = useState(false);
   
   const { signIn, signUp, user } = useAuth();
   const navigate = useNavigate();
@@ -86,6 +89,13 @@ export default function Auth() {
             fieldErrors[err.path[0]] = err.message;
           });
           setErrors(fieldErrors);
+          setLoading(false);
+          return;
+        }
+
+        // Check if phone is verified
+        if (!phoneVerified) {
+          setShowPhoneVerification(true);
           setLoading(false);
           return;
         }
@@ -207,7 +217,11 @@ export default function Auth() {
                         id="phone"
                         type="tel"
                         value={phone}
-                        onChange={(e) => setPhone(e.target.value)}
+                        onChange={(e) => {
+                          setPhone(e.target.value);
+                          setPhoneVerified(false);
+                          setShowPhoneVerification(false);
+                        }}
                         placeholder="0555123456"
                         className="pr-10"
                         dir="ltr"
@@ -216,7 +230,24 @@ export default function Auth() {
                     {errors.phone && (
                       <p className="text-sm text-destructive">{errors.phone}</p>
                     )}
+                    {phoneVerified && (
+                      <p className="text-sm text-green-600 flex items-center gap-1">
+                        <span className="w-4 h-4 bg-green-500 rounded-full flex items-center justify-center text-white text-xs">✓</span>
+                        تم التحقق من رقم الهاتف
+                      </p>
+                    )}
                   </div>
+
+                  {showPhoneVerification && !phoneVerified && (
+                    <PhoneVerification
+                      phone={phone}
+                      onVerified={() => {
+                        setPhoneVerified(true);
+                        setShowPhoneVerification(false);
+                      }}
+                      onCancel={() => setShowPhoneVerification(false)}
+                    />
+                  )}
 
                   <div className="space-y-2">
                     <Label htmlFor="level">المستوى الدراسي *</Label>
@@ -242,7 +273,7 @@ export default function Auth() {
 
               <Button type="submit" variant="hero" size="lg" className="w-full" disabled={loading}>
                 {loading && <Loader2 className="w-4 h-4 animate-spin ml-2" />}
-                {isLogin ? 'تسجيل الدخول' : 'إنشاء الحساب'}
+                {isLogin ? 'تسجيل الدخول' : (phoneVerified ? 'إنشاء الحساب' : 'التحقق من رقم الهاتف')}
               </Button>
             </form>
 

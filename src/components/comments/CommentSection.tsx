@@ -27,31 +27,46 @@ export function CommentSection({ contentId }: CommentSectionProps) {
 
   const fetchComments = async () => {
     setLoading(true);
-    const { data, error } = await supabase
+    // First fetch comments
+    const { data: commentsData, error } = await supabase
       .from('comments')
-      .select(`
-        *,
-        profile:profiles!comments_user_id_fkey(full_name, user_id)
-      `)
+      .select('*')
       .eq('content_id', contentId)
       .order('created_at', { ascending: true });
 
     if (error) {
       console.error('Error fetching comments:', error);
-    } else {
-      // Manually join profiles since the foreign key doesn't exist
-      const commentsWithProfiles = await Promise.all(
-        (data || []).map(async (comment) => {
-          const { data: profileData } = await supabase
-            .from('profiles')
-            .select('full_name, user_id')
-            .eq('user_id', comment.user_id)
-            .single();
-          return { ...comment, profile: profileData };
-        })
-      );
-      setComments(commentsWithProfiles as CommentType[]);
+      setLoading(false);
+      return;
     }
+
+    if (!commentsData || commentsData.length === 0) {
+      setComments([]);
+      setLoading(false);
+      return;
+    }
+
+    // Get unique user IDs
+    const userIds = [...new Set(commentsData.map(c => c.user_id))];
+    
+    // Fetch all profiles at once
+    const { data: profilesData } = await supabase
+      .from('profiles')
+      .select('full_name, user_id')
+      .in('user_id', userIds);
+
+    // Create a map of user_id to profile
+    const profilesMap = new Map(
+      (profilesData || []).map(p => [p.user_id, p])
+    );
+
+    // Merge comments with profiles
+    const commentsWithProfiles = commentsData.map(comment => ({
+      ...comment,
+      profile: profilesMap.get(comment.user_id) || null
+    }));
+
+    setComments(commentsWithProfiles as CommentType[]);
     setLoading(false);
   };
 
