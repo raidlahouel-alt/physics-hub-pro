@@ -13,7 +13,7 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   HelpCircle, Send, Trash2, Reply, GraduationCap, 
   CheckCircle2, Clock, MessageSquare, Filter, Search,
-  Volume2, VolumeX, RefreshCw
+  Volume2, VolumeX, RefreshCw, BookOpen
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { formatDistanceToNow } from 'date-fns';
@@ -24,6 +24,8 @@ interface QuestionData {
   user_id: string;
   message: string;
   created_at: string;
+  content_id: string | null;
+  content?: { title: string; content_type: string } | null;
   profile?: { full_name: string; user_id: string };
   replies: ReplyData[];
   isAnswered: boolean;
@@ -125,11 +127,26 @@ export default function TeacherQuestions() {
       ...(repliesData || []).map(r => r.user_id)
     ])];
 
+    // Get all content IDs
+    const contentIds = [...new Set(
+      (questionsData || [])
+        .filter(q => q.content_id)
+        .map(q => q.content_id)
+    )];
+
     // Fetch profiles
     const { data: profiles } = await supabase
       .from('profiles')
       .select('user_id, full_name')
       .in('user_id', allUserIds);
+
+    // Fetch content data
+    const { data: contentData } = contentIds.length > 0 
+      ? await supabase
+          .from('content')
+          .select('id, title, content_type')
+          .in('id', contentIds)
+      : { data: [] };
 
     // Fetch teacher roles
     const { data: teacherRoles } = await supabase
@@ -140,6 +157,9 @@ export default function TeacherQuestions() {
 
     const teacherUserIds = new Set(teacherRoles?.map(r => r.user_id) || []);
     const profileMap = new Map(profiles?.map(p => [p.user_id, p]) || []);
+    const contentMap = new Map<string, { id: string; title: string; content_type: string }>(
+      (contentData || []).map(c => [c.id, c])
+    );
 
     // Build questions with replies
     const processedQuestions: QuestionData[] = (questionsData || []).map(question => {
@@ -156,12 +176,15 @@ export default function TeacherQuestions() {
 
       // Question is answered if it has at least one teacher reply
       const isAnswered = questionReplies.some(r => r.isTeacher);
+      const contentInfo = question.content_id ? contentMap.get(question.content_id) : null;
 
       return {
         id: question.id,
         user_id: question.user_id,
         message: question.message,
         created_at: question.created_at,
+        content_id: question.content_id,
+        content: contentInfo ? { title: contentInfo.title, content_type: contentInfo.content_type } : null,
         profile: profileMap.get(question.user_id),
         replies: questionReplies,
         isAnswered
@@ -380,7 +403,7 @@ export default function TeacherQuestions() {
                         </AvatarFallback>
                       </Avatar>
                       <div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 flex-wrap">
                           <span className="font-medium">
                             {question.profile?.full_name || 'طالب'}
                           </span>
@@ -397,6 +420,13 @@ export default function TeacherQuestions() {
                               </>
                             )}
                           </Badge>
+                          {question.content && (
+                            <Badge variant="outline" className="text-xs">
+                              <BookOpen className="h-3 w-3 ml-1" />
+                              {question.content.content_type === 'lesson' ? 'درس' : 
+                               question.content.content_type === 'exercise' ? 'تمرين' : 'ملخص'}: {question.content.title}
+                            </Badge>
+                          )}
                         </div>
                         <span className="text-xs text-muted-foreground">
                           {formatDistanceToNow(new Date(question.created_at), { 
