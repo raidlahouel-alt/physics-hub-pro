@@ -74,7 +74,7 @@ export default function TeacherQuestions() {
         },
         (payload) => {
           // Only notify for new parent questions (not replies)
-          if (!payload.new.parent_id && !payload.new.content_id) {
+          if (!payload.new.parent_id) {
             if (soundEnabled) {
               playNotificationSound();
             }
@@ -99,12 +99,11 @@ export default function TeacherQuestions() {
   const fetchQuestions = async () => {
     setLoading(true);
 
-    // Fetch parent questions
+    // Fetch all parent questions (both on content and general)
     const { data: questionsData, error } = await supabase
       .from('comments')
       .select('*')
       .eq('is_question', true)
-      .is('content_id', null)
       .is('parent_id', null)
       .order('created_at', { ascending: false });
 
@@ -114,12 +113,10 @@ export default function TeacherQuestions() {
       return;
     }
 
-    // Fetch all replies
+    // Fetch all replies to questions
     const { data: repliesData } = await supabase
       .from('comments')
       .select('*')
-      .eq('is_question', true)
-      .is('content_id', null)
       .not('parent_id', 'is', null);
 
     // Get all user IDs
