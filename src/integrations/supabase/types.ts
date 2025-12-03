@@ -44,6 +44,54 @@ export type Database = {
         }
         Relationships: []
       }
+      comments: {
+        Row: {
+          content_id: string | null
+          created_at: string
+          id: string
+          is_question: boolean | null
+          message: string
+          parent_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          content_id?: string | null
+          created_at?: string
+          id?: string
+          is_question?: boolean | null
+          message: string
+          parent_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          content_id?: string | null
+          created_at?: string
+          id?: string
+          is_question?: boolean | null
+          message?: string
+          parent_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "comments_content_id_fkey"
+            columns: ["content_id"]
+            isOneToOne: false
+            referencedRelation: "content"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "comments_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "comments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       content: {
         Row: {
           content_type: Database["public"]["Enums"]["content_type"]
