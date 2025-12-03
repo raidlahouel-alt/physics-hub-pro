@@ -54,3 +54,14 @@ export interface UserRole {
   role: AppRole;
   created_at: string | null;
 }
+
+export interface Notification {
+  id: string;
+  user_id: string;
+  title: string;
+  message: string;
+  type: string;
+  content_id: string | null;
+  is_read: boolean;
+  created_at: string;
+}

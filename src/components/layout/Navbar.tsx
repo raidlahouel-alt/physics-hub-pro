@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
 import { ThemeToggle } from '@/components/ThemeToggle';
+import { NotificationBell } from '@/components/notifications/NotificationBell';
 import { Menu, X, BookOpen, User, LogOut, LayoutDashboard, Shield } from 'lucide-react';
 
 export function Navbar() {
@@ -42,6 +43,7 @@ export function Navbar() {
           {/* Auth Buttons */}
           <div className="hidden md:flex items-center gap-3">
             <ThemeToggle />
+            <NotificationBell />
             {user ? (
               <>
                 {isTeacher && (

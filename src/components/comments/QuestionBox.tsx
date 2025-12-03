@@ -6,17 +6,34 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { HelpCircle, Send, Trash2, MessageSquare } from 'lucide-react';
+import { HelpCircle, Send, Trash2, MessageSquare, Reply, GraduationCap } from 'lucide-react';
 import { toast } from 'sonner';
 import { formatDistanceToNow } from 'date-fns';
 import { ar } from 'date-fns/locale';
+import { Badge } from '@/components/ui/badge';
+
+interface CommentWithExtras {
+  id: string;
+  user_id: string;
+  content_id: string | null;
+  parent_id: string | null;
+  message: string;
+  is_question: boolean;
+  created_at: string;
+  updated_at: string;
+  profile?: { full_name: string; user_id: string };
+  isTeacherComment?: boolean;
+  replies?: CommentWithExtras[];
+}
 
 export function QuestionBox() {
   const { user, isTeacher } = useAuth();
-  const [questions, setQuestions] = useState<CommentType[]>([]);
+  const [questions, setQuestions] = useState<CommentWithExtras[]>([]);
   const [newQuestion, setNewQuestion] = useState('');
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [replyingTo, setReplyingTo] = useState<string | null>(null);
+  const [replyText, setReplyText] = useState('');
 
   useEffect(() => {
     fetchQuestions();
@@ -24,29 +41,71 @@ export function QuestionBox() {
 
   const fetchQuestions = async () => {
     setLoading(true);
-    const { data, error } = await supabase
+    
+    // Fetch questions (parent comments)
+    const { data: questionsData, error } = await supabase
       .from('comments')
       .select('*')
       .eq('is_question', true)
       .is('content_id', null)
+      .is('parent_id', null)
       .order('created_at', { ascending: false });
 
     if (error) {
       console.error('Error fetching questions:', error);
-    } else {
-      // Manually join profiles
-      const questionsWithProfiles = await Promise.all(
-        (data || []).map(async (question) => {
-          const { data: profileData } = await supabase
-            .from('profiles')
-            .select('full_name, user_id')
-            .eq('user_id', question.user_id)
-            .single();
-          return { ...question, profile: profileData };
-        })
-      );
-      setQuestions(questionsWithProfiles as CommentType[]);
+      setLoading(false);
+      return;
     }
+
+    // Fetch replies
+    const { data: repliesData } = await supabase
+      .from('comments')
+      .select('*')
+      .eq('is_question', true)
+      .is('content_id', null)
+      .not('parent_id', 'is', null)
+      .order('created_at', { ascending: true });
+
+    // Fetch profiles for all users
+    const allUserIds = [...new Set([
+      ...(questionsData || []).map(q => q.user_id),
+      ...(repliesData || []).map(r => r.user_id)
+    ])];
+
+    const { data: profiles } = await supabase
+      .from('profiles')
+      .select('user_id, full_name')
+      .in('user_id', allUserIds);
+
+    // Fetch teacher roles
+    const { data: teacherRoles } = await supabase
+      .from('user_roles')
+      .select('user_id')
+      .eq('role', 'teacher')
+      .in('user_id', allUserIds);
+
+    const teacherUserIds = new Set(teacherRoles?.map(r => r.user_id) || []);
+    const profileMap = new Map(profiles?.map(p => [p.user_id, p]) || []);
+
+    // Build questions with replies
+    const questionsWithReplies: CommentWithExtras[] = (questionsData || []).map(question => {
+      const questionReplies = (repliesData || [])
+        .filter(r => r.parent_id === question.id)
+        .map(reply => ({
+          ...reply,
+          profile: profileMap.get(reply.user_id),
+          isTeacherComment: teacherUserIds.has(reply.user_id)
+        }));
+
+      return {
+        ...question,
+        profile: profileMap.get(question.user_id),
+        isTeacherComment: teacherUserIds.has(question.user_id),
+        replies: questionReplies
+      };
+    });
+
+    setQuestions(questionsWithReplies);
     setLoading(false);
   };
 
@@ -65,7 +124,8 @@ export function QuestionBox() {
         user_id: user.id,
         message: newQuestion.trim(),
         is_question: true,
-        content_id: null
+        content_id: null,
+        parent_id: null
       });
 
     if (error) {
@@ -79,19 +139,50 @@ export function QuestionBox() {
     setSubmitting(false);
   };
 
-  const handleDelete = async (questionId: string) => {
-    if (!confirm('هل أنت متأكد من حذف هذا السؤال؟')) return;
+  const handleReply = async (questionId: string) => {
+    if (!user || !replyText.trim()) return;
+
+    if (replyText.length > 1000) {
+      toast.error('الرد طويل جداً (الحد الأقصى 1000 حرف)');
+      return;
+    }
+
+    setSubmitting(true);
+    const { error } = await supabase
+      .from('comments')
+      .insert({
+        user_id: user.id,
+        message: replyText.trim(),
+        is_question: true,
+        content_id: null,
+        parent_id: questionId
+      });
+
+    if (error) {
+      console.error('Error adding reply:', error);
+      toast.error('حدث خطأ أثناء إرسال الرد');
+    } else {
+      toast.success('تم إرسال الرد بنجاح');
+      setReplyText('');
+      setReplyingTo(null);
+      fetchQuestions();
+    }
+    setSubmitting(false);
+  };
+
+  const handleDelete = async (commentId: string) => {
+    if (!confirm('هل أنت متأكد من حذف هذا؟')) return;
 
     const { error } = await supabase
       .from('comments')
       .delete()
-      .eq('id', questionId);
+      .eq('id', commentId);
 
     if (error) {
-      console.error('Error deleting question:', error);
-      toast.error('حدث خطأ أثناء حذف السؤال');
+      console.error('Error deleting:', error);
+      toast.error('حدث خطأ أثناء الحذف');
     } else {
-      toast.success('تم حذف السؤال');
+      toast.success('تم الحذف بنجاح');
       fetchQuestions();
     }
   };
@@ -143,37 +234,127 @@ export function QuestionBox() {
           ) : questions.length === 0 ? (
             <div className="text-center py-4 text-muted-foreground">لا توجد أسئلة بعد</div>
           ) : (
-            <div className="space-y-3 max-h-96 overflow-y-auto">
-              {questions.map((question) => (
-                <div key={question.id} className="flex gap-3 p-4 rounded-lg bg-muted/50 border border-border">
-                  <Avatar className="h-10 w-10 shrink-0">
-                    <AvatarFallback>
-                      {getInitials(question.profile?.full_name || '')}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between gap-2 mb-1">
-                      <span className="font-medium">
-                        {question.profile?.full_name || 'طالب'}
-                      </span>
-                      <span className="text-xs text-muted-foreground">
-                        {formatDistanceToNow(new Date(question.created_at), { 
-                          addSuffix: true, 
-                          locale: ar 
-                        })}
-                      </span>
+            <div className="space-y-4 max-h-[500px] overflow-y-auto">
+              {questions.map((question: any) => (
+                <div key={question.id} className="rounded-lg border border-border overflow-hidden">
+                  {/* Question */}
+                  <div className="flex gap-3 p-4 bg-muted/30">
+                    <Avatar className="h-10 w-10 shrink-0">
+                      <AvatarFallback>
+                        {getInitials(question.profile?.full_name || '')}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1 flex-wrap">
+                        <span className="font-medium">
+                          {question.profile?.full_name || 'طالب'}
+                        </span>
+                        {question.isTeacherComment && (
+                          <Badge variant="secondary" className="text-xs">
+                            <GraduationCap className="h-3 w-3 ml-1" />
+                            أستاذ
+                          </Badge>
+                        )}
+                        <span className="text-xs text-muted-foreground">
+                          {formatDistanceToNow(new Date(question.created_at), { 
+                            addSuffix: true, 
+                            locale: ar 
+                          })}
+                        </span>
+                      </div>
+                      <p className="text-sm break-words">{question.message}</p>
+                      
+                      {/* Reply button for teachers */}
+                      {isTeacher && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="mt-2 text-primary"
+                          onClick={() => setReplyingTo(replyingTo === question.id ? null : question.id)}
+                        >
+                          <Reply className="h-4 w-4 ml-1" />
+                          رد
+                        </Button>
+                      )}
                     </div>
-                    <p className="text-sm break-words">{question.message}</p>
+                    {(user?.id === question.user_id || isTeacher) && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="shrink-0 text-destructive hover:text-destructive"
+                        onClick={() => handleDelete(question.id)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    )}
                   </div>
-                  {(user?.id === question.user_id || isTeacher) && (
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="shrink-0 text-destructive hover:text-destructive"
-                      onClick={() => handleDelete(question.id)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+
+                  {/* Reply input */}
+                  {replyingTo === question.id && (
+                    <div className="p-3 bg-primary/5 border-t border-border">
+                      <div className="flex gap-2">
+                        <Textarea
+                          placeholder="اكتب ردك..."
+                          value={replyText}
+                          onChange={(e) => setReplyText(e.target.value)}
+                          className="resize-none"
+                          rows={2}
+                          maxLength={1000}
+                        />
+                        <Button
+                          onClick={() => handleReply(question.id)}
+                          disabled={!replyText.trim() || submitting}
+                          size="icon"
+                        >
+                          <Send className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Replies */}
+                  {question.replies && question.replies.length > 0 && (
+                    <div className="border-t border-border">
+                      {question.replies.map((reply: any) => (
+                        <div key={reply.id} className="flex gap-3 p-3 pr-12 bg-background border-b border-border/50 last:border-b-0">
+                          <Avatar className="h-8 w-8 shrink-0">
+                            <AvatarFallback className="text-xs">
+                              {getInitials(reply.profile?.full_name || '')}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-1 flex-wrap">
+                              <span className="font-medium text-sm">
+                                {reply.profile?.full_name || 'مستخدم'}
+                              </span>
+                              {reply.isTeacherComment && (
+                                <Badge variant="default" className="text-xs bg-primary">
+                                  <GraduationCap className="h-3 w-3 ml-1" />
+                                  أستاذ
+                                </Badge>
+                              )}
+                              <span className="text-xs text-muted-foreground">
+                                {formatDistanceToNow(new Date(reply.created_at), { 
+                                  addSuffix: true, 
+                                  locale: ar 
+                                })}
+                              </span>
+                            </div>
+                            <p className="text-sm break-words">{reply.message}</p>
+                          </div>
+                          {(user?.id === reply.user_id || isTeacher) && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="shrink-0 h-8 w-8 text-destructive hover:text-destructive"
+                              onClick={() => handleDelete(reply.id)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </div>
+                      ))}
+                    </div>
                   )}
                 </div>
               ))}
