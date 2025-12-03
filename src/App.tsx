@@ -13,6 +13,7 @@ import ContentPage from "./pages/ContentPage";
 import Profile from "./pages/Profile";
 import TeacherDashboard from "./pages/TeacherDashboard";
 import ManageTeachers from "./pages/ManageTeachers";
+import TeacherQuestions from "./pages/TeacherQuestions";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -34,6 +35,7 @@ const App = () => (
               <Route path="/profile" element={<Profile />} />
               <Route path="/teacher" element={<TeacherDashboard />} />
               <Route path="/manage-teachers" element={<ManageTeachers />} />
+              <Route path="/teacher-questions" element={<TeacherQuestions />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
             </BrowserRouter>
