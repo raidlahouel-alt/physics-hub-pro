@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
+import { ThemeToggle } from '@/components/ThemeToggle';
 import { Menu, X, BookOpen, User, LogOut, LayoutDashboard, Shield } from 'lucide-react';
 
 export function Navbar() {
@@ -40,6 +41,7 @@ export function Navbar() {
 
           {/* Auth Buttons */}
           <div className="hidden md:flex items-center gap-3">
+            <ThemeToggle />
             {user ? (
               <>
                 {isTeacher && (
@@ -93,6 +95,10 @@ export function Navbar() {
         {isOpen && (
           <div className="md:hidden py-4 border-t border-border/30 animate-fade-in">
             <div className="flex flex-col gap-3">
+              <div className="flex items-center justify-between py-2">
+                <span className="text-foreground/80">تغيير المظهر</span>
+                <ThemeToggle />
+              </div>
               <Link to="/" className="py-2 text-foreground/80 hover:text-foreground" onClick={() => setIsOpen(false)}>
                 الرئيسية
               </Link>
