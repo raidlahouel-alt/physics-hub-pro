@@ -1,16 +1,19 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useNotificationSound } from '@/hooks/useNotificationSound';
 import { Layout } from '@/components/layout/Layout';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
+import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   HelpCircle, Send, Trash2, Reply, GraduationCap, 
-  CheckCircle2, Clock, MessageSquare, Filter 
+  CheckCircle2, Clock, MessageSquare, Filter, Search,
+  Volume2, VolumeX, RefreshCw
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { formatDistanceToNow } from 'date-fns';
@@ -37,18 +40,61 @@ interface ReplyData {
 
 export default function TeacherQuestions() {
   const { user, isTeacher } = useAuth();
+  const { playNotificationSound } = useNotificationSound();
   const [questions, setQuestions] = useState<QuestionData[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | 'answered' | 'unanswered'>('all');
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
   const [replyText, setReplyText] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [soundEnabled, setSoundEnabled] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const questionsCountRef = useRef(0);
 
   useEffect(() => {
     if (isTeacher) {
       fetchQuestions();
     }
   }, [isTeacher]);
+
+  // Real-time subscription for new questions
+  useEffect(() => {
+    if (!isTeacher) return;
+
+    const channel = supabase
+      .channel('teacher-questions')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'comments',
+          filter: 'is_question=eq.true'
+        },
+        (payload) => {
+          // Only notify for new parent questions (not replies)
+          if (!payload.new.parent_id && !payload.new.content_id) {
+            if (soundEnabled) {
+              playNotificationSound();
+            }
+            toast.info('سؤال جديد!', {
+              description: 'تم استلام سؤال جديد من طالب',
+              action: {
+                label: 'عرض',
+                onClick: () => fetchQuestions()
+              }
+            });
+            fetchQuestions();
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [isTeacher, soundEnabled, playNotificationSound]);
 
   const fetchQuestions = async () => {
     setLoading(true);
@@ -174,9 +220,26 @@ export default function TeacherQuestions() {
     return name?.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() || '؟';
   };
 
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await fetchQuestions();
+    setRefreshing(false);
+    toast.success('تم تحديث الأسئلة');
+  };
+
   const filteredQuestions = questions.filter(q => {
-    if (filter === 'answered') return q.isAnswered;
-    if (filter === 'unanswered') return !q.isAnswered;
+    // Apply status filter
+    if (filter === 'answered' && !q.isAnswered) return false;
+    if (filter === 'unanswered' && q.isAnswered) return false;
+    
+    // Apply search filter
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      const matchesMessage = q.message.toLowerCase().includes(query);
+      const matchesName = q.profile?.full_name?.toLowerCase().includes(query);
+      if (!matchesMessage && !matchesName) return false;
+    }
+    
     return true;
   });
 
@@ -243,6 +306,38 @@ export default function TeacherQuestions() {
               </div>
             </CardContent>
           </Card>
+        </div>
+
+        {/* Search and Controls */}
+        <div className="flex flex-col sm:flex-row gap-4 mb-6">
+          <div className="relative flex-1 max-w-md">
+            <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="بحث عن سؤال أو اسم طالب..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pr-10"
+            />
+          </div>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => setSoundEnabled(!soundEnabled)}
+              title={soundEnabled ? 'إيقاف صوت الإشعارات' : 'تفعيل صوت الإشعارات'}
+            >
+              {soundEnabled ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
+            </Button>
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={handleRefresh}
+              disabled={refreshing}
+              title="تحديث الأسئلة"
+            >
+              <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
+            </Button>
+          </div>
         </div>
 
         {/* Filter Tabs */}
