@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { Content } from '@/lib/types';
 import { DifficultyStars } from './DifficultyStars';
-import { FileText, BookOpen, ClipboardList, Download, MessageCircle, ChevronDown, ChevronUp } from 'lucide-react';
+import { FileText, BookOpen, ClipboardList, MessageCircle, ChevronDown, ChevronUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { CommentSection } from '@/components/comments/CommentSection';
+import { ContentViewer } from '@/components/content/ContentViewer';
 
 interface ContentCardProps {
   content: Content;
@@ -59,20 +60,8 @@ export function ContentCard({ content }: ContentCardProps) {
         </p>
       )}
 
-      <div className="flex gap-2">
-        {content.file_url && (
-          <Button variant="outline" size="sm" className="flex-1" asChild>
-            <a 
-              href={content.file_url} 
-              target="_blank" 
-              rel="noopener noreferrer"
-              download
-            >
-              <Download className="w-4 h-4 ml-2" />
-              تحميل الملف
-            </a>
-          </Button>
-        )}
+      <div className="flex gap-2 mb-2">
+        <ContentViewer content={content} />
         <Button 
           variant="ghost" 
           size="sm"

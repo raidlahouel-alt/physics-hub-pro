@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Notification } from '@/lib/types';
@@ -12,12 +12,27 @@ import { Bell, Check, BookOpen, MessageSquare, Info, Megaphone } from 'lucide-re
 import { formatDistanceToNow } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
+import { useToast } from '@/hooks/use-toast';
 
 export function NotificationBell() {
   const { user } = useAuth();
+  const { toast } = useToast();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [open, setOpen] = useState(false);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  // Play notification sound
+  const playNotificationSound = () => {
+    try {
+      if (!audioRef.current) {
+        audioRef.current = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2teleQ4ZLIH/9NdRAB0/lfv3zlwADj2S+/fQYQAGN5D69NNlAAE2j/rx1GgAAzWP+fDWagABNI758NdtAAEzjvjv2W8AATOu9+/ZcQABMq738NlyAAEx7fbw2XQAAjHt9fDbdQABMOz19dx3AAEw6/T13ngAATDr9PXfegABL+rz9eB7AAEv6vP14HwAATDp8/XhfgABMOjz9uJ/AAEv6PP24oEAAS/n8/bjgwABLufz9+OEAAEu5/P35IYAAi7m8vflhwABLubz9+aJAAEt5fL35ooAAS3l8vfnjAABLeXy9+iNAAIt5PL36I8AAS3k8vjpkAABLOTy+OqSAAEs4/L46pQAASzj8vnrlQACK+Py+euXAAEr4vL567kAASvh8fntugABKuHx+e66AAEq4PH57rsAASrg8Pnvuw==');
+      }
+      audioRef.current.play().catch(() => {});
+    } catch (e) {
+      // Ignore audio errors
+    }
+  };
 
   useEffect(() => {
     if (!user) return;
@@ -39,6 +54,13 @@ export function NotificationBell() {
           const newNotification = payload.new as Notification;
           setNotifications(prev => [newNotification, ...prev]);
           setUnreadCount(prev => prev + 1);
+          
+          // Play sound and show toast
+          playNotificationSound();
+          toast({
+            title: newNotification.title,
+            description: newNotification.message,
+          });
         }
       )
       .subscribe();
@@ -46,7 +68,7 @@ export function NotificationBell() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user]);
+  }, [user, toast]);
 
   const fetchNotifications = async () => {
     if (!user) return;

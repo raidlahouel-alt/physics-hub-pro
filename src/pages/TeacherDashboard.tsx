@@ -49,27 +49,24 @@ export default function TeacherDashboard() {
   const [annContent, setAnnContent] = useState('');
   const [annLevel, setAnnLevel] = useState<StudentLevel | ''>('');
 
-  // Dropzone for PDF upload
+  // Dropzone for any file upload
   const onDrop = useCallback((acceptedFiles: File[]) => {
     if (acceptedFiles.length > 0) {
       const file = acceptedFiles[0];
-      if (file.type === 'application/pdf') {
-        setContentFile(file);
-      } else {
+      if (file.size > MAX_FILE_SIZE) {
         toast({
-          title: 'خطأ',
-          description: 'يرجى رفع ملف PDF فقط',
+          title: 'الملف كبير جداً',
+          description: 'الحد الأقصى لحجم الملف هو 10 ميجابايت',
           variant: 'destructive',
         });
+        return;
       }
+      setContentFile(file);
     }
   }, [toast]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
-    accept: {
-      'application/pdf': ['.pdf']
-    },
     maxFiles: 1,
     multiple: false,
     maxSize: MAX_FILE_SIZE
@@ -99,8 +96,25 @@ export default function TeacherDashboard() {
   const fetchData = async () => {
     setLoading(true);
     if (activeTab === 'students') {
-      const { data } = await supabase.from('profiles').select('*').order('created_at', { ascending: false });
-      if (data) setStudents(data as Profile[]);
+      // Get all profiles
+      const { data: profilesData } = await supabase
+        .from('profiles')
+        .select('*')
+        .order('created_at', { ascending: false });
+      
+      // Get all teacher user_ids
+      const { data: teacherRoles } = await supabase
+        .from('user_roles')
+        .select('user_id')
+        .eq('role', 'teacher');
+      
+      const teacherIds = teacherRoles?.map(r => r.user_id) || [];
+      
+      // Filter out teachers from profiles
+      if (profilesData) {
+        const studentsOnly = profilesData.filter(p => !teacherIds.includes(p.user_id));
+        setStudents(studentsOnly as Profile[]);
+      }
     } else if (activeTab === 'manage-content') {
       const { data } = await supabase.from('content').select('*').order('created_at', { ascending: false });
       if (data) setContents(data as Content[]);
@@ -387,7 +401,7 @@ export default function TeacherDashboard() {
                 
                 {/* Drag and Drop Area */}
                 <div>
-                  <Label>الملف PDF</Label>
+                  <Label>الملف (PDF, صور, فيديو, صوت...)</Label>
                   <div
                     {...getRootProps()}
                     className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
@@ -425,8 +439,8 @@ export default function TeacherDashboard() {
                           <p className="text-primary">أفلت الملف هنا...</p>
                         ) : (
                           <>
-                            <p className="text-foreground font-medium mb-1">اسحب وأفلت ملف PDF هنا</p>
-                            <p className="text-sm text-muted-foreground">أو انقر للاختيار</p>
+                            <p className="text-foreground font-medium mb-1">اسحب وأفلت أي ملف هنا</p>
+                            <p className="text-sm text-muted-foreground">PDF, صور, فيديو, صوت... (الحد الأقصى 10MB)</p>
                           </>
                         )}
                       </>
