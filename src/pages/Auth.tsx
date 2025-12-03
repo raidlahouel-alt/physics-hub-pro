@@ -6,17 +6,21 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, BookOpen, Mail, Lock, User, Phone } from 'lucide-react';
+import { StudentLevel } from '@/lib/types';
+import { Loader2, BookOpen, Mail, Lock, User, Phone, GraduationCap } from 'lucide-react';
 import { z } from 'zod';
 
 const loginSchema = z.object({
   email: z.string().email('البريد الإلكتروني غير صالح'),
   password: z.string().min(6, 'كلمة المرور يجب أن تكون 6 أحرف على الأقل'),
-  phone: z.string().min(10, 'رقم الهاتف يجب أن يكون 10 أرقام على الأقل').regex(/^[0-9]+$/, 'رقم الهاتف يجب أن يحتوي على أرقام فقط'),
 });
 
-const signupSchema = loginSchema.extend({
+const signupSchema = z.object({
+  email: z.string().email('البريد الإلكتروني غير صالح'),
+  password: z.string().min(6, 'كلمة المرور يجب أن تكون 6 أحرف على الأقل'),
   fullName: z.string().min(3, 'الاسم يجب أن يكون 3 أحرف على الأقل'),
+  phone: z.string().min(10, 'رقم الهاتف يجب أن يكون 10 أرقام على الأقل').regex(/^[0-9]+$/, 'رقم الهاتف يجب أن يحتوي على أرقام فقط'),
+  level: z.enum(['second_year', 'baccalaureate'], { required_error: 'يرجى اختيار المستوى الدراسي' }),
 });
 
 export default function Auth() {
@@ -26,6 +30,7 @@ export default function Auth() {
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
   const [phone, setPhone] = useState('');
+  const [level, setLevel] = useState<StudentLevel | ''>('');
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   
@@ -46,7 +51,7 @@ export default function Auth() {
 
     try {
       if (isLogin) {
-        const result = loginSchema.safeParse({ email, password, phone });
+        const result = loginSchema.safeParse({ email, password });
         if (!result.success) {
           const fieldErrors: Record<string, string> = {};
           result.error.errors.forEach(err => {
@@ -74,7 +79,7 @@ export default function Auth() {
           navigate('/');
         }
       } else {
-        const result = signupSchema.safeParse({ email, password, phone, fullName });
+        const result = signupSchema.safeParse({ email, password, fullName, phone, level });
         if (!result.success) {
           const fieldErrors: Record<string, string> = {};
           result.error.errors.forEach(err => {
@@ -85,7 +90,7 @@ export default function Auth() {
           return;
         }
 
-        const { error } = await signUp(email, password, fullName, phone);
+        const { error } = await signUp(email, password, fullName, phone, level as StudentLevel);
         if (error) {
           let message = error.message;
           if (error.message.includes('already registered')) {
@@ -192,24 +197,48 @@ export default function Auth() {
                 )}
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="phone">رقم الهاتف *</Label>
-                <div className="relative">
-                  <Phone className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-                  <Input
-                    id="phone"
-                    type="tel"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    placeholder="0555123456"
-                    className="pr-10"
-                    dir="ltr"
-                  />
-                </div>
-                {errors.phone && (
-                  <p className="text-sm text-destructive">{errors.phone}</p>
-                )}
-              </div>
+              {!isLogin && (
+                <>
+                  <div className="space-y-2">
+                    <Label htmlFor="phone">رقم الهاتف</Label>
+                    <div className="relative">
+                      <Phone className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                      <Input
+                        id="phone"
+                        type="tel"
+                        value={phone}
+                        onChange={(e) => setPhone(e.target.value)}
+                        placeholder="0555123456"
+                        className="pr-10"
+                        dir="ltr"
+                      />
+                    </div>
+                    {errors.phone && (
+                      <p className="text-sm text-destructive">{errors.phone}</p>
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="level">المستوى الدراسي *</Label>
+                    <div className="relative">
+                      <GraduationCap className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground pointer-events-none" />
+                      <select
+                        id="level"
+                        value={level}
+                        onChange={(e) => setLevel(e.target.value as StudentLevel)}
+                        className="w-full h-10 pr-10 pl-3 rounded-lg border border-input bg-background text-foreground"
+                      >
+                        <option value="">اختر المستوى</option>
+                        <option value="second_year">السنة الثانية ثانوي</option>
+                        <option value="baccalaureate">البكالوريا</option>
+                      </select>
+                    </div>
+                    {errors.level && (
+                      <p className="text-sm text-destructive">{errors.level}</p>
+                    )}
+                  </div>
+                </>
+              )}
 
               <Button type="submit" variant="hero" size="lg" className="w-full" disabled={loading}>
                 {loading && <Loader2 className="w-4 h-4 animate-spin ml-2" />}
