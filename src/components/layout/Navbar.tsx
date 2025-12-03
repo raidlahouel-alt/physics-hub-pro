@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { NotificationBell } from '@/components/notifications/NotificationBell';
-import { Menu, X, BookOpen, User, LogOut, LayoutDashboard, Shield } from 'lucide-react';
+import { Menu, X, BookOpen, User, LogOut, LayoutDashboard, Shield, HelpCircle } from 'lucide-react';
 
 export function Navbar() {
   const { user, profile, signOut, isTeacher } = useAuth();
@@ -52,6 +52,12 @@ export function Navbar() {
                       <Link to="/teacher">
                         <LayoutDashboard className="w-4 h-4 ml-2" />
                         لوحة التحكم
+                      </Link>
+                    </Button>
+                    <Button variant="outline" size="sm" asChild>
+                      <Link to="/teacher-questions">
+                        <HelpCircle className="w-4 h-4 ml-2" />
+                        الأسئلة
                       </Link>
                     </Button>
                     <Button variant="outline" size="sm" asChild>
@@ -113,6 +119,9 @@ export function Navbar() {
                     <>
                       <Link to="/teacher" className="py-2 text-primary" onClick={() => setIsOpen(false)}>
                         لوحة التحكم
+                      </Link>
+                      <Link to="/teacher-questions" className="py-2 text-primary" onClick={() => setIsOpen(false)}>
+                        الأسئلة
                       </Link>
                       <Link to="/manage-teachers" className="py-2 text-primary" onClick={() => setIsOpen(false)}>
                         إدارة المعلمين
