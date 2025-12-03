@@ -6,16 +6,19 @@ import { Label } from '@/components/ui/label';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
-import { Profile, ContentType, StudentLevel } from '@/lib/types';
-import { Users, Plus, Loader2, Upload, Bell, FileText, X, Trash2 } from 'lucide-react';
+import { Profile, ContentType, StudentLevel, Content, Announcement } from '@/lib/types';
+import { Users, Plus, Loader2, Upload, Bell, FileText, X, Trash2, BookOpen, ClipboardList } from 'lucide-react';
 import { useDropzone } from 'react-dropzone';
 
 export default function TeacherDashboard() {
   const { profile, isTeacher } = useAuth();
   const { toast } = useToast();
-  const [activeTab, setActiveTab] = useState<'students' | 'content' | 'announcements'>('students');
+  const [activeTab, setActiveTab] = useState<'students' | 'content' | 'announcements' | 'manage-content' | 'manage-announcements'>('students');
   const [students, setStudents] = useState<Profile[]>([]);
+  const [contents, setContents] = useState<Content[]>([]);
+  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [loading, setLoading] = useState(true);
+  const [onlineUsers, setOnlineUsers] = useState<string[]>([]);
 
   // Content form
   const [contentTitle, setContentTitle] = useState('');
@@ -56,6 +59,23 @@ export default function TeacherDashboard() {
     multiple: false
   });
 
+  // Track online users with Supabase Presence
+  useEffect(() => {
+    const channel = supabase.channel('online-users');
+    
+    channel
+      .on('presence', { event: 'sync' }, () => {
+        const state = channel.presenceState();
+        const userIds = Object.values(state).flat().map((p: any) => p.user_id);
+        setOnlineUsers(userIds);
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
   useEffect(() => {
     fetchData();
   }, [activeTab]);
@@ -63,8 +83,14 @@ export default function TeacherDashboard() {
   const fetchData = async () => {
     setLoading(true);
     if (activeTab === 'students') {
-      const { data } = await supabase.from('profiles').select('*');
+      const { data } = await supabase.from('profiles').select('*').order('created_at', { ascending: false });
       if (data) setStudents(data as Profile[]);
+    } else if (activeTab === 'manage-content') {
+      const { data } = await supabase.from('content').select('*').order('created_at', { ascending: false });
+      if (data) setContents(data as Content[]);
+    } else if (activeTab === 'manage-announcements') {
+      const { data } = await supabase.from('announcements').select('*').order('created_at', { ascending: false });
+      if (data) setAnnouncements(data as Announcement[]);
     }
     setLoading(false);
   };
@@ -146,6 +172,66 @@ export default function TeacherDashboard() {
     }
   };
 
+  const handleDeleteContent = async (contentId: string) => {
+    if (!confirm('هل أنت متأكد من حذف هذا المحتوى؟')) return;
+    
+    const { error } = await supabase.from('content').delete().eq('id', contentId);
+    
+    if (!error) {
+      toast({ title: 'تم حذف المحتوى بنجاح' });
+      fetchData();
+    } else {
+      toast({ 
+        title: 'خطأ في الحذف', 
+        description: error.message,
+        variant: 'destructive' 
+      });
+    }
+  };
+
+  const handleDeleteAnnouncement = async (announcementId: string) => {
+    if (!confirm('هل أنت متأكد من حذف هذا الإعلان؟')) return;
+    
+    const { error } = await supabase.from('announcements').delete().eq('id', announcementId);
+    
+    if (!error) {
+      toast({ title: 'تم حذف الإعلان بنجاح' });
+      fetchData();
+    } else {
+      toast({ 
+        title: 'خطأ في الحذف', 
+        description: error.message,
+        variant: 'destructive' 
+      });
+    }
+  };
+
+  const getContentTypeLabel = (type: ContentType) => {
+    switch (type) {
+      case 'lesson': return 'درس';
+      case 'summary': return 'ملخص';
+      case 'exercise': return 'تمرين';
+      default: return type;
+    }
+  };
+
+  const getContentTypeIcon = (type: ContentType) => {
+    switch (type) {
+      case 'lesson': return BookOpen;
+      case 'summary': return FileText;
+      case 'exercise': return ClipboardList;
+      default: return FileText;
+    }
+  };
+
+  const getLevelLabel = (level: StudentLevel | null) => {
+    switch (level) {
+      case 'second_year': return 'ثانية ثانوي';
+      case 'baccalaureate': return 'بكالوريا';
+      default: return 'الكل';
+    }
+  };
+
   if (!isTeacher) {
     return <Layout><div className="min-h-screen flex items-center justify-center"><p>غير مصرح لك بالوصول</p></div></Layout>;
   }
@@ -160,7 +246,9 @@ export default function TeacherDashboard() {
             {[
               { id: 'students', label: 'الطلاب', icon: Users }, 
               { id: 'content', label: 'إضافة محتوى', icon: Plus }, 
-              { id: 'announcements', label: 'الإعلانات', icon: Bell }
+              { id: 'announcements', label: 'إضافة إعلان', icon: Bell },
+              { id: 'manage-content', label: 'إدارة المحتوى', icon: BookOpen },
+              { id: 'manage-announcements', label: 'إدارة الإعلانات', icon: Bell },
             ].map((tab) => (
               <Button key={tab.id} variant={activeTab === tab.id ? 'default' : 'outline'} onClick={() => setActiveTab(tab.id as typeof activeTab)}>
                 <tab.icon className="w-4 h-4 ml-2" />{tab.label}
@@ -170,17 +258,45 @@ export default function TeacherDashboard() {
 
           {activeTab === 'students' && (
             <div className="glass-card p-6">
-              <h2 className="font-semibold mb-4">الطلاب المسجلين ({students.length})</h2>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="font-semibold">الطلاب المسجلين ({students.length})</h2>
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <span className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></span>
+                  <span>متصل الآن: {onlineUsers.length}</span>
+                </div>
+              </div>
               {loading ? <Loader2 className="w-6 h-6 animate-spin mx-auto" /> : (
                 <div className="space-y-3">
                   {students.map((s) => (
                     <div key={s.id} className="flex items-center justify-between p-4 bg-secondary rounded-lg">
-                      <div className="flex-1">
-                        <div className="font-medium">{s.full_name}</div>
-                        <div className="text-xs text-muted-foreground">
-                          {s.level === 'second_year' ? 'ثانية ثانوي' : s.level === 'baccalaureate' ? 'بكالوريا' : 'غير محدد'}
-                          {' • '}
-                          {s.phone || 'لا يوجد رقم'}
+                      <div className="flex items-center gap-3 flex-1">
+                        <div className="relative">
+                          <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center text-primary font-semibold">
+                            {s.full_name.charAt(0)}
+                          </div>
+                          {onlineUsers.includes(s.user_id) && (
+                            <span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-green-500 rounded-full border-2 border-secondary"></span>
+                          )}
+                        </div>
+                        <div className="flex-1">
+                          <div className="font-medium flex items-center gap-2">
+                            {s.full_name}
+                            {onlineUsers.includes(s.user_id) && (
+                              <span className="text-xs text-green-500">متصل</span>
+                            )}
+                          </div>
+                          <div className="text-xs text-muted-foreground space-y-0.5">
+                            <div>
+                              المستوى: {getLevelLabel(s.level)}
+                              {' • '}
+                              الهاتف: {s.phone || 'غير محدد'}
+                            </div>
+                            <div>
+                              تاريخ التسجيل: {new Date(s.created_at).toLocaleDateString('ar-DZ')}
+                              {' • '}
+                              آخر تحديث: {new Date(s.updated_at).toLocaleDateString('ar-DZ')}
+                            </div>
+                          </div>
                         </div>
                       </div>
                       <Button 
@@ -289,6 +405,85 @@ export default function TeacherDashboard() {
                   {submitting && <Loader2 className="w-4 h-4 animate-spin ml-2" />}نشر الإعلان
                 </Button>
               </form>
+            </div>
+          )}
+
+          {activeTab === 'manage-content' && (
+            <div className="glass-card p-6">
+              <h2 className="font-semibold mb-4">إدارة المحتوى ({contents.length})</h2>
+              {loading ? <Loader2 className="w-6 h-6 animate-spin mx-auto" /> : contents.length === 0 ? (
+                <p className="text-center text-muted-foreground py-8">لا يوجد محتوى</p>
+              ) : (
+                <div className="space-y-3">
+                  {contents.map((c) => {
+                    const Icon = getContentTypeIcon(c.content_type);
+                    return (
+                      <div key={c.id} className="flex items-center justify-between p-4 bg-secondary rounded-lg">
+                        <div className="flex items-center gap-3 flex-1">
+                          <div className="w-10 h-10 rounded-lg bg-primary/20 flex items-center justify-center">
+                            <Icon className="w-5 h-5 text-primary" />
+                          </div>
+                          <div className="flex-1">
+                            <div className="font-medium">{c.title}</div>
+                            <div className="text-xs text-muted-foreground">
+                              {getContentTypeLabel(c.content_type)} • {getLevelLabel(c.level)} • صعوبة: {c.difficulty}/3
+                            </div>
+                            <div className="text-xs text-muted-foreground">
+                              تاريخ الإضافة: {new Date(c.created_at).toLocaleDateString('ar-DZ')}
+                            </div>
+                          </div>
+                        </div>
+                        <Button 
+                          variant="ghost" 
+                          size="icon"
+                          onClick={() => handleDeleteContent(c.id)}
+                          className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
+
+          {activeTab === 'manage-announcements' && (
+            <div className="glass-card p-6">
+              <h2 className="font-semibold mb-4">إدارة الإعلانات ({announcements.length})</h2>
+              {loading ? <Loader2 className="w-6 h-6 animate-spin mx-auto" /> : announcements.length === 0 ? (
+                <p className="text-center text-muted-foreground py-8">لا يوجد إعلانات</p>
+              ) : (
+                <div className="space-y-3">
+                  {announcements.map((a) => (
+                    <div key={a.id} className="flex items-center justify-between p-4 bg-secondary rounded-lg">
+                      <div className="flex items-center gap-3 flex-1">
+                        <div className="w-10 h-10 rounded-lg bg-amber-500/20 flex items-center justify-center">
+                          <Bell className="w-5 h-5 text-amber-500" />
+                        </div>
+                        <div className="flex-1">
+                          <div className="font-medium">{a.title}</div>
+                          <div className="text-sm text-muted-foreground line-clamp-1">{a.content}</div>
+                          <div className="text-xs text-muted-foreground">
+                            المستوى: {getLevelLabel(a.level)} • {a.is_active ? 'نشط' : 'غير نشط'}
+                            {' • '}
+                            تاريخ النشر: {new Date(a.created_at).toLocaleDateString('ar-DZ')}
+                          </div>
+                        </div>
+                      </div>
+                      <Button 
+                        variant="ghost" 
+                        size="icon"
+                        onClick={() => handleDeleteAnnouncement(a.id)}
+                        className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
         </div>

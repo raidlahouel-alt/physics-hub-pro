@@ -1,6 +1,8 @@
 import { Link } from 'react-router-dom';
 import { Layout } from '@/components/layout/Layout';
-import { GraduationCap, BookOpen, ArrowLeft } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { useAuth } from '@/hooks/useAuth';
+import { GraduationCap, BookOpen, ArrowLeft, Lock, Loader2 } from 'lucide-react';
 
 const levels = [
   {
@@ -22,6 +24,39 @@ const levels = [
 ];
 
 export default function Levels() {
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <Layout>
+        <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        </div>
+      </Layout>
+    );
+  }
+
+  if (!user) {
+    return (
+      <Layout>
+        <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center py-20">
+          <div className="text-center max-w-md mx-auto px-4">
+            <div className="w-20 h-20 rounded-full bg-secondary flex items-center justify-center mx-auto mb-6">
+              <Lock className="w-10 h-10 text-muted-foreground" />
+            </div>
+            <h2 className="text-2xl font-bold mb-4">يجب تسجيل الدخول</h2>
+            <p className="text-muted-foreground mb-6">
+              لعرض المستويات الدراسية والمحتوى التعليمي، يرجى تسجيل الدخول أو إنشاء حساب جديد
+            </p>
+            <Button variant="hero" asChild>
+              <Link to="/auth">تسجيل الدخول</Link>
+            </Button>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
+
   return (
     <Layout>
       <div className="min-h-[calc(100vh-4rem)] py-20">
