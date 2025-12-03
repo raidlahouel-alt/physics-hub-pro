@@ -7,8 +7,23 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { Profile, ContentType, StudentLevel, Content, Announcement } from '@/lib/types';
-import { Users, Plus, Loader2, Upload, Bell, FileText, X, Trash2, BookOpen, ClipboardList } from 'lucide-react';
+import { Users, Plus, Loader2, Upload, Bell, FileText, X, Trash2, BookOpen, ClipboardList, MessageSquare } from 'lucide-react';
 import { useDropzone } from 'react-dropzone';
+import { OnlineStatusIndicator } from '@/components/common/OnlineStatusIndicator';
+import { z } from 'zod';
+
+// Validation schemas
+const contentSchema = z.object({
+  title: z.string().min(3, 'العنوان يجب أن يكون 3 أحرف على الأقل').max(200, 'العنوان طويل جداً'),
+  description: z.string().max(1000, 'الوصف طويل جداً').optional(),
+});
+
+const announcementSchema = z.object({
+  title: z.string().min(3, 'العنوان يجب أن يكون 3 أحرف على الأقل').max(200, 'العنوان طويل جداً'),
+  content: z.string().min(10, 'المحتوى يجب أن يكون 10 أحرف على الأقل').max(2000, 'المحتوى طويل جداً'),
+});
+
+const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 
 export default function TeacherDashboard() {
   const { profile, isTeacher } = useAuth();
@@ -56,7 +71,8 @@ export default function TeacherDashboard() {
       'application/pdf': ['.pdf']
     },
     maxFiles: 1,
-    multiple: false
+    multiple: false,
+    maxSize: MAX_FILE_SIZE
   });
 
   // Track online users with Supabase Presence
@@ -97,19 +113,41 @@ export default function TeacherDashboard() {
 
   const handleAddContent = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validate input
+    const validation = contentSchema.safeParse({ title: contentTitle, description: contentDesc });
+    if (!validation.success) {
+      toast({ 
+        title: 'خطأ في البيانات', 
+        description: validation.error.errors[0].message,
+        variant: 'destructive' 
+      });
+      return;
+    }
+
+    if (contentFile && contentFile.size > MAX_FILE_SIZE) {
+      toast({ 
+        title: 'الملف كبير جداً', 
+        description: 'الحد الأقصى لحجم الملف هو 10 ميجابايت',
+        variant: 'destructive' 
+      });
+      return;
+    }
+
     setSubmitting(true);
     let fileUrl = null;
     if (contentFile) {
       const fileName = `${Date.now()}-${contentFile.name}`;
       const { error } = await supabase.storage.from('content-files').upload(fileName, contentFile);
       if (!error) {
-        const { data } = supabase.storage.from('content-files').getPublicUrl(fileName);
-        fileUrl = data.publicUrl;
+        // Generate signed URL for private bucket
+        const { data } = await supabase.storage.from('content-files').createSignedUrl(fileName, 60 * 60 * 24 * 365); // 1 year
+        fileUrl = data?.signedUrl || null;
       }
     }
     const { error } = await supabase.from('content').insert({
-      title: contentTitle, 
-      description: contentDesc, 
+      title: contentTitle.trim(), 
+      description: contentDesc.trim() || null, 
       content_type: contentType,
       level: contentLevel, 
       difficulty: contentDifficulty, 
@@ -133,10 +171,22 @@ export default function TeacherDashboard() {
 
   const handleAddAnnouncement = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validate input
+    const validation = announcementSchema.safeParse({ title: annTitle, content: annContent });
+    if (!validation.success) {
+      toast({ 
+        title: 'خطأ في البيانات', 
+        description: validation.error.errors[0].message,
+        variant: 'destructive' 
+      });
+      return;
+    }
+
     setSubmitting(true);
     const { error } = await supabase.from('announcements').insert({
-      title: annTitle, 
-      content: annContent, 
+      title: annTitle.trim(), 
+      content: annContent.trim(), 
       level: annLevel || null,
       created_by: profile?.user_id
     });
@@ -267,23 +317,23 @@ export default function TeacherDashboard() {
               </div>
               {loading ? <Loader2 className="w-6 h-6 animate-spin mx-auto" /> : (
                 <div className="space-y-3">
-                  {students.map((s) => (
+                  {students.map((s) => {
+                    const isOnline = onlineUsers.includes(s.user_id);
+                    return (
                     <div key={s.id} className="flex items-center justify-between p-4 bg-secondary rounded-lg">
                       <div className="flex items-center gap-3 flex-1">
                         <div className="relative">
                           <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center text-primary font-semibold">
                             {s.full_name.charAt(0)}
                           </div>
-                          {onlineUsers.includes(s.user_id) && (
-                            <span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-green-500 rounded-full border-2 border-secondary"></span>
-                          )}
+                          <span className={`absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full border-2 border-secondary ${
+                            isOnline ? 'bg-green-500' : 'bg-red-500'
+                          }`}></span>
                         </div>
                         <div className="flex-1">
                           <div className="font-medium flex items-center gap-2">
                             {s.full_name}
-                            {onlineUsers.includes(s.user_id) && (
-                              <span className="text-xs text-green-500">متصل</span>
-                            )}
+                            <OnlineStatusIndicator isOnline={isOnline} size="sm" />
                           </div>
                           <div className="text-xs text-muted-foreground space-y-0.5">
                             <div>
@@ -308,7 +358,8 @@ export default function TeacherDashboard() {
                         <Trash2 className="w-4 h-4" />
                       </Button>
                     </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>

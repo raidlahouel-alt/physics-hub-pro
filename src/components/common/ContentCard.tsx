@@ -1,7 +1,9 @@
+import { useState } from 'react';
 import { Content } from '@/lib/types';
 import { DifficultyStars } from './DifficultyStars';
-import { FileText, BookOpen, ClipboardList, Download } from 'lucide-react';
+import { FileText, BookOpen, ClipboardList, Download, MessageCircle, ChevronDown, ChevronUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { CommentSection } from '@/components/comments/CommentSection';
 
 interface ContentCardProps {
   content: Content;
@@ -26,6 +28,7 @@ const contentTypeConfig = {
 };
 
 export function ContentCard({ content }: ContentCardProps) {
+  const [showComments, setShowComments] = useState(false);
   const config = contentTypeConfig[content.content_type];
   const Icon = config.icon;
 
@@ -56,19 +59,32 @@ export function ContentCard({ content }: ContentCardProps) {
         </p>
       )}
 
-      {content.file_url && (
-        <Button variant="outline" size="sm" className="w-full" asChild>
-          <a 
-            href={content.file_url} 
-            target="_blank" 
-            rel="noopener noreferrer"
-            download
-          >
-            <Download className="w-4 h-4 ml-2" />
-            تحميل الملف
-          </a>
+      <div className="flex gap-2">
+        {content.file_url && (
+          <Button variant="outline" size="sm" className="flex-1" asChild>
+            <a 
+              href={content.file_url} 
+              target="_blank" 
+              rel="noopener noreferrer"
+              download
+            >
+              <Download className="w-4 h-4 ml-2" />
+              تحميل الملف
+            </a>
+          </Button>
+        )}
+        <Button 
+          variant="ghost" 
+          size="sm"
+          onClick={() => setShowComments(!showComments)}
+          className="shrink-0"
+        >
+          <MessageCircle className="w-4 h-4 ml-1" />
+          {showComments ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
         </Button>
-      )}
+      </div>
+
+      {showComments && <CommentSection contentId={content.id} />}
     </div>
   );
 }

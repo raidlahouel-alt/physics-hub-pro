@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useParams, Link, Navigate } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import { Layout } from '@/components/layout/Layout';
 import { ContentCard } from '@/components/common/ContentCard';
 import { Button } from '@/components/ui/button';
@@ -7,6 +7,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Content, StudentLevel, ContentType } from '@/lib/types';
 import { useAuth } from '@/hooks/useAuth';
 import { Loader2, BookOpen, FileText, ClipboardList, ArrowRight, Lock } from 'lucide-react';
+import { QuestionBox } from '@/components/comments/QuestionBox';
 
 const levelNames: Record<string, string> = {
   second_year: 'السنة الثانية ثانوي',
@@ -101,6 +102,9 @@ export default function ContentPage() {
               <span className="gradient-text">{level ? levelNames[level] : ''}</span>
             </h1>
           </div>
+
+          {/* Question Box - Ask the Teacher */}
+          <QuestionBox />
 
           <div className="flex flex-wrap items-center justify-center gap-3 mb-12">
             <Button variant={activeType === 'all' ? 'default' : 'outline'} onClick={() => setActiveType('all')}>الكل</Button>
