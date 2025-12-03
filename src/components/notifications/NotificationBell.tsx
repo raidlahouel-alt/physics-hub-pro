@@ -8,7 +8,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
-import { Bell, Check, BookOpen, MessageSquare, Info } from 'lucide-react';
+import { Bell, Check, BookOpen, MessageSquare, Info, Megaphone } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
@@ -93,6 +93,8 @@ export function NotificationBell() {
         return <BookOpen className="h-4 w-4 text-primary" />;
       case 'reply':
         return <MessageSquare className="h-4 w-4 text-accent" />;
+      case 'announcement':
+        return <Megaphone className="h-4 w-4 text-orange-500" />;
       default:
         return <Info className="h-4 w-4 text-muted-foreground" />;
     }
