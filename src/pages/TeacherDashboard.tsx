@@ -42,6 +42,7 @@ export default function TeacherDashboard() {
   const [contentLevel, setContentLevel] = useState<StudentLevel>('second_year');
   const [contentDifficulty, setContentDifficulty] = useState(1);
   const [contentFile, setContentFile] = useState<File | null>(null);
+  const [filePreview, setFilePreview] = useState<string | null>(null);
   const [driveUrl, setDriveUrl] = useState('');
   const [uploadMethod, setUploadMethod] = useState<'file' | 'drive'>('file');
   const [submitting, setSubmitting] = useState(false);
@@ -64,6 +65,17 @@ export default function TeacherDashboard() {
         return;
       }
       setContentFile(file);
+      
+      // Create preview for images
+      if (file.type.startsWith('image/')) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          setFilePreview(e.target?.result as string);
+        };
+        reader.readAsDataURL(file);
+      } else {
+        setFilePreview(null);
+      }
     }
   }, [toast]);
 
@@ -84,12 +96,27 @@ export default function TeacherDashboard() {
         const userIds = Object.values(state).flat().map((p: any) => p.user_id);
         setOnlineUsers(userIds);
       })
-      .subscribe();
+      .on('presence', { event: 'join' }, ({ newPresences }) => {
+        const newUserIds = newPresences.map((p: any) => p.user_id);
+        setOnlineUsers(prev => [...new Set([...prev, ...newUserIds])]);
+      })
+      .on('presence', { event: 'leave' }, ({ leftPresences }) => {
+        const leftUserIds = leftPresences.map((p: any) => p.user_id);
+        setOnlineUsers(prev => prev.filter(id => !leftUserIds.includes(id)));
+      })
+      .subscribe(async (status) => {
+        if (status === 'SUBSCRIBED' && profile?.user_id) {
+          await channel.track({
+            user_id: profile.user_id,
+            online_at: new Date().toISOString(),
+          });
+        }
+      });
 
     return () => {
       supabase.removeChannel(channel);
     };
-  }, []);
+  }, [profile?.user_id]);
 
   useEffect(() => {
     fetchData();
@@ -186,6 +213,7 @@ export default function TeacherDashboard() {
       setContentTitle(''); 
       setContentDesc(''); 
       setContentFile(null);
+      setFilePreview(null);
       setDriveUrl('');
     } else {
       toast({ 
@@ -506,23 +534,36 @@ export default function TeacherDashboard() {
                     >
                       <input {...getInputProps()} />
                       {contentFile ? (
-                        <div className="flex items-center justify-center gap-3">
-                          <FileText className="w-8 h-8 text-success" />
-                          <div className="flex-1 text-right">
-                            <p className="font-medium text-foreground">{contentFile.name}</p>
-                            <p className="text-xs text-muted-foreground">{(contentFile.size / 1024 / 1024).toFixed(2)} MB</p>
+                        <div className="space-y-3">
+                          {/* Image Preview */}
+                          {filePreview && (
+                            <div className="flex justify-center">
+                              <img 
+                                src={filePreview} 
+                                alt="معاينة" 
+                                className="max-h-40 rounded-lg border border-border object-contain"
+                              />
+                            </div>
+                          )}
+                          <div className="flex items-center justify-center gap-3">
+                            <FileText className="w-8 h-8 text-success" />
+                            <div className="flex-1 text-right">
+                              <p className="font-medium text-foreground">{contentFile.name}</p>
+                              <p className="text-xs text-muted-foreground">{(contentFile.size / 1024 / 1024).toFixed(2)} MB</p>
+                            </div>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setContentFile(null);
+                                setFilePreview(null);
+                              }}
+                            >
+                              <X className="w-4 h-4" />
+                            </Button>
                           </div>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setContentFile(null);
-                            }}
-                          >
-                            <X className="w-4 h-4" />
-                          </Button>
                         </div>
                       ) : (
                         <>
