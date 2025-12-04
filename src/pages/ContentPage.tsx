@@ -103,9 +103,6 @@ export default function ContentPage() {
             </h1>
           </div>
 
-          {/* Question Box - Ask the Teacher */}
-          <QuestionBox />
-
           <div className="flex flex-wrap items-center justify-center gap-3 mb-12">
             <Button variant={activeType === 'all' ? 'default' : 'outline'} onClick={() => setActiveType('all')}>الكل</Button>
             {contentTypes.map((item) => (
@@ -132,6 +129,11 @@ export default function ContentPage() {
               ))}
             </div>
           )}
+
+          {/* Question Box - Ask the Teacher (at bottom) */}
+          <div className="mt-12">
+            <QuestionBox />
+          </div>
         </div>
       </div>
     </Layout>
