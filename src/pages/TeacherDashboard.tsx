@@ -7,7 +7,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { Profile, ContentType, StudentLevel, Content, Announcement } from '@/lib/types';
-import { Users, Plus, Loader2, Upload, Bell, FileText, X, Trash2, BookOpen, ClipboardList, MessageSquare } from 'lucide-react';
+import { Users, Plus, Loader2, Upload, Bell, FileText, X, Trash2, BookOpen, ClipboardList, MessageSquare, Search, BarChart3, GraduationCap, Megaphone, FileStack } from 'lucide-react';
 import { useDropzone } from 'react-dropzone';
 import { OnlineStatusIndicator } from '@/components/common/OnlineStatusIndicator';
 import { z } from 'zod';
@@ -34,6 +34,8 @@ export default function TeacherDashboard() {
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [loading, setLoading] = useState(true);
   const [onlineUsers, setOnlineUsers] = useState<string[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [stats, setStats] = useState({ lessons: 0, summaries: 0, exercises: 0, announcements: 0 });
 
   // Content form
   const [contentTitle, setContentTitle] = useState('');
@@ -120,7 +122,29 @@ export default function TeacherDashboard() {
 
   useEffect(() => {
     fetchData();
+    fetchStats();
   }, [activeTab]);
+
+  const fetchStats = async () => {
+    const [lessonsRes, summariesRes, exercisesRes, announcementsRes] = await Promise.all([
+      supabase.from('content').select('id', { count: 'exact', head: true }).eq('content_type', 'lesson'),
+      supabase.from('content').select('id', { count: 'exact', head: true }).eq('content_type', 'summary'),
+      supabase.from('content').select('id', { count: 'exact', head: true }).eq('content_type', 'exercise'),
+      supabase.from('announcements').select('id', { count: 'exact', head: true }),
+    ]);
+    setStats({
+      lessons: lessonsRes.count || 0,
+      summaries: summariesRes.count || 0,
+      exercises: exercisesRes.count || 0,
+      announcements: announcementsRes.count || 0,
+    });
+  };
+
+  // Filter students by search
+  const filteredStudents = students.filter(s => 
+    s.full_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (s.phone && s.phone.includes(searchQuery))
+  );
 
   const fetchData = async () => {
     setLoading(true);
@@ -346,7 +370,47 @@ export default function TeacherDashboard() {
     <Layout>
       <div className="min-h-[calc(100vh-4rem)] py-20">
         <div className="container mx-auto px-4">
-          <h1 className="text-3xl font-bold gradient-text mb-8">لوحة تحكم الأستاذ</h1>
+          <h1 className="text-3xl font-bold gradient-text mb-6">لوحة تحكم الأستاذ</h1>
+
+          {/* Statistics Cards */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+            <div className="glass-card p-4 flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-blue-500/20">
+                <BookOpen className="w-5 h-5 text-blue-500" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold">{stats.lessons}</p>
+                <p className="text-xs text-muted-foreground">الدروس</p>
+              </div>
+            </div>
+            <div className="glass-card p-4 flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-green-500/20">
+                <FileStack className="w-5 h-5 text-green-500" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold">{stats.summaries}</p>
+                <p className="text-xs text-muted-foreground">الملخصات</p>
+              </div>
+            </div>
+            <div className="glass-card p-4 flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-orange-500/20">
+                <ClipboardList className="w-5 h-5 text-orange-500" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold">{stats.exercises}</p>
+                <p className="text-xs text-muted-foreground">التمارين</p>
+              </div>
+            </div>
+            <div className="glass-card p-4 flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-purple-500/20">
+                <Megaphone className="w-5 h-5 text-purple-500" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold">{stats.announcements}</p>
+                <p className="text-xs text-muted-foreground">الإعلانات</p>
+              </div>
+            </div>
+          </div>
 
           <div className="flex flex-wrap gap-3 mb-8">
             {[
@@ -364,11 +428,22 @@ export default function TeacherDashboard() {
 
           {activeTab === 'students' && (
             <div className="space-y-6">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <h2 className="font-semibold text-lg">الطلاب المسجلين ({students.length})</h2>
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <span className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></span>
-                  <span>متصل الآن: {students.filter(s => onlineUsers.includes(s.user_id)).length}</span>
+                <div className="flex items-center gap-4">
+                  <div className="relative">
+                    <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <Input
+                      placeholder="بحث بالاسم أو الهاتف..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="pr-9 w-48"
+                    />
+                  </div>
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <span className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></span>
+                    <span>متصل: {students.filter(s => onlineUsers.includes(s.user_id)).length}</span>
+                  </div>
                 </div>
               </div>
               
@@ -380,14 +455,14 @@ export default function TeacherDashboard() {
                       <div className="w-3 h-3 rounded-full bg-primary"></div>
                       <h3 className="font-semibold text-primary">طلاب البكالوريا</h3>
                       <span className="text-xs bg-primary/20 text-primary px-2 py-0.5 rounded-full">
-                        {students.filter(s => s.level === 'baccalaureate').length}
+                        {filteredStudents.filter(s => s.level === 'baccalaureate').length}
                       </span>
                     </div>
                     <div className="space-y-3 max-h-96 overflow-y-auto">
-                      {students.filter(s => s.level === 'baccalaureate').length === 0 ? (
+                      {filteredStudents.filter(s => s.level === 'baccalaureate').length === 0 ? (
                         <p className="text-center text-muted-foreground py-4">لا يوجد طلاب</p>
                       ) : (
-                        students.filter(s => s.level === 'baccalaureate').map((s) => {
+                        filteredStudents.filter(s => s.level === 'baccalaureate').map((s) => {
                           const isOnline = onlineUsers.includes(s.user_id);
                           return (
                             <div key={s.id} className="flex items-center justify-between p-3 bg-secondary/50 rounded-lg">
@@ -428,14 +503,14 @@ export default function TeacherDashboard() {
                       <div className="w-3 h-3 rounded-full bg-accent"></div>
                       <h3 className="font-semibold text-accent">طلاب الثانية ثانوي</h3>
                       <span className="text-xs bg-accent/20 text-accent px-2 py-0.5 rounded-full">
-                        {students.filter(s => s.level === 'second_year').length}
+                        {filteredStudents.filter(s => s.level === 'second_year').length}
                       </span>
                     </div>
                     <div className="space-y-3 max-h-96 overflow-y-auto">
-                      {students.filter(s => s.level === 'second_year').length === 0 ? (
+                      {filteredStudents.filter(s => s.level === 'second_year').length === 0 ? (
                         <p className="text-center text-muted-foreground py-4">لا يوجد طلاب</p>
                       ) : (
-                        students.filter(s => s.level === 'second_year').map((s) => {
+                        filteredStudents.filter(s => s.level === 'second_year').map((s) => {
                           const isOnline = onlineUsers.includes(s.user_id);
                           return (
                             <div key={s.id} className="flex items-center justify-between p-3 bg-secondary/50 rounded-lg">
