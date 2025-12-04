@@ -23,7 +23,7 @@ const announcementSchema = z.object({
   content: z.string().min(10, 'المحتوى يجب أن يكون 10 أحرف على الأقل').max(2000, 'المحتوى طويل جداً'),
 });
 
-const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
 
 export default function TeacherDashboard() {
   const { profile, isTeacher } = useAuth();
@@ -42,6 +42,8 @@ export default function TeacherDashboard() {
   const [contentLevel, setContentLevel] = useState<StudentLevel>('second_year');
   const [contentDifficulty, setContentDifficulty] = useState(1);
   const [contentFile, setContentFile] = useState<File | null>(null);
+  const [driveUrl, setDriveUrl] = useState('');
+  const [uploadMethod, setUploadMethod] = useState<'file' | 'drive'>('file');
   const [submitting, setSubmitting] = useState(false);
 
   // Announcement form
@@ -56,7 +58,7 @@ export default function TeacherDashboard() {
       if (file.size > MAX_FILE_SIZE) {
         toast({
           title: 'الملف كبير جداً',
-          description: 'الحد الأقصى لحجم الملف هو 10 ميجابايت',
+          description: 'الحد الأقصى لحجم الملف هو 50 ميجابايت',
           variant: 'destructive',
         });
         return;
@@ -142,7 +144,7 @@ export default function TeacherDashboard() {
     if (contentFile && contentFile.size > MAX_FILE_SIZE) {
       toast({ 
         title: 'الملف كبير جداً', 
-        description: 'الحد الأقصى لحجم الملف هو 10 ميجابايت',
+        description: 'الحد الأقصى لحجم الملف هو 50 ميجابايت',
         variant: 'destructive' 
       });
       return;
@@ -150,7 +152,16 @@ export default function TeacherDashboard() {
 
     setSubmitting(true);
     let fileUrl = null;
-    if (contentFile) {
+    
+    if (uploadMethod === 'drive' && driveUrl) {
+      // Convert Google Drive share URL to direct embed URL
+      const driveMatch = driveUrl.match(/\/d\/([a-zA-Z0-9_-]+)/);
+      if (driveMatch) {
+        fileUrl = `https://drive.google.com/file/d/${driveMatch[1]}/preview`;
+      } else {
+        fileUrl = driveUrl;
+      }
+    } else if (contentFile) {
       const fileName = `${Date.now()}-${contentFile.name}`;
       const { error } = await supabase.storage.from('content-files').upload(fileName, contentFile);
       if (!error) {
@@ -173,6 +184,7 @@ export default function TeacherDashboard() {
       setContentTitle(''); 
       setContentDesc(''); 
       setContentFile(null);
+      setDriveUrl('');
     } else {
       toast({ 
         title: 'خطأ في الإضافة', 
@@ -321,59 +333,112 @@ export default function TeacherDashboard() {
           </div>
 
           {activeTab === 'students' && (
-            <div className="glass-card p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="font-semibold">الطلاب المسجلين ({students.length})</h2>
+            <div className="space-y-6">
+              <div className="flex items-center justify-between">
+                <h2 className="font-semibold text-lg">الطلاب المسجلين ({students.length})</h2>
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <span className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></span>
                   <span>متصل الآن: {onlineUsers.length}</span>
                 </div>
               </div>
+              
               {loading ? <Loader2 className="w-6 h-6 animate-spin mx-auto" /> : (
-                <div className="space-y-3">
-                  {students.map((s) => {
-                    const isOnline = onlineUsers.includes(s.user_id);
-                    return (
-                    <div key={s.id} className="flex items-center justify-between p-4 bg-secondary rounded-lg">
-                      <div className="flex items-center gap-3 flex-1">
-                        <div className="relative">
-                          <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center text-primary font-semibold">
-                            {s.full_name.charAt(0)}
-                          </div>
-                          <span className={`absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full border-2 border-secondary ${
-                            isOnline ? 'bg-green-500' : 'bg-red-500'
-                          }`}></span>
-                        </div>
-                        <div className="flex-1">
-                          <div className="font-medium flex items-center gap-2">
-                            {s.full_name}
-                            <OnlineStatusIndicator isOnline={isOnline} size="sm" />
-                          </div>
-                          <div className="text-xs text-muted-foreground space-y-0.5">
-                            <div>
-                              المستوى: {getLevelLabel(s.level)}
-                              {' • '}
-                              الهاتف: {s.phone || 'غير محدد'}
-                            </div>
-                            <div>
-                              تاريخ التسجيل: {new Date(s.created_at).toLocaleDateString('ar-DZ')}
-                              {' • '}
-                              آخر تحديث: {new Date(s.updated_at).toLocaleDateString('ar-DZ')}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                      <Button 
-                        variant="ghost" 
-                        size="icon"
-                        onClick={() => handleDeleteStudent(s.id)}
-                        className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
+                <div className="grid md:grid-cols-2 gap-6">
+                  {/* قسم البكالوريا */}
+                  <div className="glass-card p-6">
+                    <div className="flex items-center gap-2 mb-4 pb-3 border-b border-border">
+                      <div className="w-3 h-3 rounded-full bg-primary"></div>
+                      <h3 className="font-semibold text-primary">طلاب البكالوريا</h3>
+                      <span className="text-xs bg-primary/20 text-primary px-2 py-0.5 rounded-full">
+                        {students.filter(s => s.level === 'baccalaureate').length}
+                      </span>
                     </div>
-                    );
-                  })}
+                    <div className="space-y-3 max-h-96 overflow-y-auto">
+                      {students.filter(s => s.level === 'baccalaureate').length === 0 ? (
+                        <p className="text-center text-muted-foreground py-4">لا يوجد طلاب</p>
+                      ) : (
+                        students.filter(s => s.level === 'baccalaureate').map((s) => {
+                          const isOnline = onlineUsers.includes(s.user_id);
+                          return (
+                            <div key={s.id} className="flex items-center justify-between p-3 bg-secondary/50 rounded-lg">
+                              <div className="flex items-center gap-3 flex-1">
+                                <div className="relative">
+                                  <div className="w-9 h-9 rounded-full bg-primary/20 flex items-center justify-center text-primary font-semibold text-sm">
+                                    {s.full_name.charAt(0)}
+                                  </div>
+                                  <span className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-secondary ${
+                                    isOnline ? 'bg-green-500' : 'bg-red-500'
+                                  }`}></span>
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <div className="font-medium text-sm truncate">{s.full_name}</div>
+                                  <div className="text-xs text-muted-foreground truncate">
+                                    {s.phone || 'بدون هاتف'}
+                                  </div>
+                                </div>
+                              </div>
+                              <Button 
+                                variant="ghost" 
+                                size="icon"
+                                onClick={() => handleDeleteStudent(s.id)}
+                                className="text-destructive hover:text-destructive hover:bg-destructive/10 h-8 w-8"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </Button>
+                            </div>
+                          );
+                        })
+                      )}
+                    </div>
+                  </div>
+
+                  {/* قسم الثانية ثانوي */}
+                  <div className="glass-card p-6">
+                    <div className="flex items-center gap-2 mb-4 pb-3 border-b border-border">
+                      <div className="w-3 h-3 rounded-full bg-accent"></div>
+                      <h3 className="font-semibold text-accent">طلاب الثانية ثانوي</h3>
+                      <span className="text-xs bg-accent/20 text-accent px-2 py-0.5 rounded-full">
+                        {students.filter(s => s.level === 'second_year').length}
+                      </span>
+                    </div>
+                    <div className="space-y-3 max-h-96 overflow-y-auto">
+                      {students.filter(s => s.level === 'second_year').length === 0 ? (
+                        <p className="text-center text-muted-foreground py-4">لا يوجد طلاب</p>
+                      ) : (
+                        students.filter(s => s.level === 'second_year').map((s) => {
+                          const isOnline = onlineUsers.includes(s.user_id);
+                          return (
+                            <div key={s.id} className="flex items-center justify-between p-3 bg-secondary/50 rounded-lg">
+                              <div className="flex items-center gap-3 flex-1">
+                                <div className="relative">
+                                  <div className="w-9 h-9 rounded-full bg-accent/20 flex items-center justify-center text-accent font-semibold text-sm">
+                                    {s.full_name.charAt(0)}
+                                  </div>
+                                  <span className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-secondary ${
+                                    isOnline ? 'bg-green-500' : 'bg-red-500'
+                                  }`}></span>
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <div className="font-medium text-sm truncate">{s.full_name}</div>
+                                  <div className="text-xs text-muted-foreground truncate">
+                                    {s.phone || 'بدون هاتف'}
+                                  </div>
+                                </div>
+                              </div>
+                              <Button 
+                                variant="ghost" 
+                                size="icon"
+                                onClick={() => handleDeleteStudent(s.id)}
+                                className="text-destructive hover:text-destructive hover:bg-destructive/10 h-8 w-8"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </Button>
+                            </div>
+                          );
+                        })
+                      )}
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
@@ -399,54 +464,93 @@ export default function TeacherDashboard() {
                 </div>
                 <div><Label>الصعوبة (1-3)</Label><Input type="number" min={1} max={3} value={contentDifficulty} onChange={(e) => setContentDifficulty(+e.target.value)} /></div>
                 
-                {/* Drag and Drop Area */}
+                {/* Upload Method Selection */}
                 <div>
-                  <Label>الملف (PDF, صور, فيديو, صوت...)</Label>
-                  <div
-                    {...getRootProps()}
-                    className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
-                      isDragActive 
-                        ? 'border-primary bg-primary/10' 
-                        : contentFile 
-                        ? 'border-success bg-success/10' 
-                        : 'border-border hover:border-primary/50'
-                    }`}
-                  >
-                    <input {...getInputProps()} />
-                    {contentFile ? (
-                      <div className="flex items-center justify-center gap-3">
-                        <FileText className="w-8 h-8 text-success" />
-                        <div className="flex-1 text-right">
-                          <p className="font-medium text-foreground">{contentFile.name}</p>
-                          <p className="text-xs text-muted-foreground">{(contentFile.size / 1024 / 1024).toFixed(2)} MB</p>
-                        </div>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setContentFile(null);
-                          }}
-                        >
-                          <X className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    ) : (
-                      <>
-                        <Upload className="w-10 h-10 mx-auto mb-3 text-muted-foreground" />
-                        {isDragActive ? (
-                          <p className="text-primary">أفلت الملف هنا...</p>
-                        ) : (
-                          <>
-                            <p className="text-foreground font-medium mb-1">اسحب وأفلت أي ملف هنا</p>
-                            <p className="text-sm text-muted-foreground">PDF, صور, فيديو, صوت... (الحد الأقصى 10MB)</p>
-                          </>
-                        )}
-                      </>
-                    )}
+                  <Label>طريقة الرفع</Label>
+                  <div className="flex gap-2 mt-2">
+                    <Button
+                      type="button"
+                      variant={uploadMethod === 'file' ? 'default' : 'outline'}
+                      onClick={() => setUploadMethod('file')}
+                      className="flex-1"
+                    >
+                      <Upload className="w-4 h-4 ml-2" />
+                      رفع ملف
+                    </Button>
+                    <Button
+                      type="button"
+                      variant={uploadMethod === 'drive' ? 'default' : 'outline'}
+                      onClick={() => setUploadMethod('drive')}
+                      className="flex-1"
+                    >
+                      <FileText className="w-4 h-4 ml-2" />
+                      رابط Drive
+                    </Button>
                   </div>
                 </div>
+
+                {uploadMethod === 'file' ? (
+                  <div>
+                    <Label>الملف (PDF, صور, فيديو, صوت...)</Label>
+                    <div
+                      {...getRootProps()}
+                      className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
+                        isDragActive 
+                          ? 'border-primary bg-primary/10' 
+                          : contentFile 
+                          ? 'border-success bg-success/10' 
+                          : 'border-border hover:border-primary/50'
+                      }`}
+                    >
+                      <input {...getInputProps()} />
+                      {contentFile ? (
+                        <div className="flex items-center justify-center gap-3">
+                          <FileText className="w-8 h-8 text-success" />
+                          <div className="flex-1 text-right">
+                            <p className="font-medium text-foreground">{contentFile.name}</p>
+                            <p className="text-xs text-muted-foreground">{(contentFile.size / 1024 / 1024).toFixed(2)} MB</p>
+                          </div>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setContentFile(null);
+                            }}
+                          >
+                            <X className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      ) : (
+                        <>
+                          <Upload className="w-10 h-10 mx-auto mb-3 text-muted-foreground" />
+                          {isDragActive ? (
+                            <p className="text-primary">أفلت الملف هنا...</p>
+                          ) : (
+                            <>
+                              <p className="text-foreground font-medium mb-1">اسحب وأفلت أي ملف هنا</p>
+                              <p className="text-sm text-muted-foreground">PDF, صور, فيديو, صوت... (الحد الأقصى 50MB)</p>
+                            </>
+                          )}
+                        </>
+                      )}
+                    </div>
+                  </div>
+                ) : (
+                  <div>
+                    <Label>رابط Google Drive</Label>
+                    <Input 
+                      value={driveUrl} 
+                      onChange={(e) => setDriveUrl(e.target.value)} 
+                      placeholder="https://drive.google.com/file/d/..."
+                      className="mt-2"
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      الصق رابط المشاركة من Google Drive (تأكد من أن الملف مشارك للعموم)
+                    </p>
+                  </div>
+                )}
 
                 <Button type="submit" variant="hero" className="w-full" disabled={submitting}>
                   {submitting && <Loader2 className="w-4 h-4 animate-spin ml-2" />}إضافة

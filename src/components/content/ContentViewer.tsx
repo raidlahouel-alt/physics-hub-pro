@@ -8,8 +8,10 @@ interface ContentViewerProps {
   content: Content;
 }
 
-const getFileType = (url: string): 'pdf' | 'image' | 'video' | 'audio' | 'other' => {
+const getFileType = (url: string): 'pdf' | 'image' | 'video' | 'audio' | 'drive' | 'other' => {
   const lowercaseUrl = url.toLowerCase();
+  // Check if it's a Google Drive URL
+  if (lowercaseUrl.includes('drive.google.com')) return 'drive';
   if (lowercaseUrl.includes('.pdf')) return 'pdf';
   if (lowercaseUrl.match(/\.(jpg|jpeg|png|gif|webp|svg)/)) return 'image';
   if (lowercaseUrl.match(/\.(mp4|webm|ogg|mov)/)) return 'video';
@@ -23,6 +25,7 @@ const getFileIcon = (fileType: string) => {
     case 'image': return Image;
     case 'video': return Video;
     case 'audio': return FileAudio;
+    case 'drive': return FileText;
     default: return File;
   }
 };
@@ -71,6 +74,16 @@ export function ContentViewer({ content }: ContentViewerProps) {
               متصفحك لا يدعم تشغيل الصوت
             </audio>
           </div>
+        );
+      case 'drive':
+        return (
+          <iframe
+            src={content.file_url}
+            className="w-full h-[70vh] rounded-lg border border-border"
+            title={content.title}
+            allow="autoplay"
+            allowFullScreen
+          />
         );
       default:
         return (
