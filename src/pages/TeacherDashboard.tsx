@@ -368,7 +368,7 @@ export default function TeacherDashboard() {
                 <h2 className="font-semibold text-lg">الطلاب المسجلين ({students.length})</h2>
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <span className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></span>
-                  <span>متصل الآن: {onlineUsers.length}</span>
+                  <span>متصل الآن: {students.filter(s => onlineUsers.includes(s.user_id)).length}</span>
                 </div>
               </div>
               
