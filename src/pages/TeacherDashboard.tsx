@@ -162,11 +162,13 @@ export default function TeacherDashboard() {
         fileUrl = driveUrl;
       }
     } else if (contentFile) {
-      const fileName = `${Date.now()}-${contentFile.name}`;
-      const { error } = await supabase.storage.from('content-files').upload(fileName, contentFile);
+      // Sanitize filename - remove Arabic and special characters
+      const fileExt = contentFile.name.split('.').pop() || '';
+      const sanitizedName = `${Date.now()}-${Math.random().toString(36).substring(2, 8)}.${fileExt}`;
+      const { error } = await supabase.storage.from('content-files').upload(sanitizedName, contentFile);
       if (!error) {
         // Generate signed URL for private bucket
-        const { data } = await supabase.storage.from('content-files').createSignedUrl(fileName, 60 * 60 * 24 * 365); // 1 year
+        const { data } = await supabase.storage.from('content-files').createSignedUrl(sanitizedName, 60 * 60 * 24 * 365); // 1 year
         fileUrl = data?.signedUrl || null;
       }
     }
