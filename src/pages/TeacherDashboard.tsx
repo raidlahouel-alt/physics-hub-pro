@@ -43,8 +43,8 @@ export default function TeacherDashboard() {
   const [contentType, setContentType] = useState<ContentType>('lesson');
   const [contentLevel, setContentLevel] = useState<StudentLevel>('second_year');
   const [contentDifficulty, setContentDifficulty] = useState(1);
-  const [contentFile, setContentFile] = useState<File | null>(null);
-  const [filePreview, setFilePreview] = useState<string | null>(null);
+  const [contentFiles, setContentFiles] = useState<File[]>([]);
+  const [filePreviews, setFilePreviews] = useState<string[]>([]);
   const [driveUrl, setDriveUrl] = useState('');
   const [uploadMethod, setUploadMethod] = useState<'file' | 'drive'>('file');
   const [submitting, setSubmitting] = useState(false);
@@ -54,37 +54,43 @@ export default function TeacherDashboard() {
   const [annContent, setAnnContent] = useState('');
   const [annLevel, setAnnLevel] = useState<StudentLevel | ''>('');
 
-  // Dropzone for any file upload
+  // Dropzone for multiple file upload
   const onDrop = useCallback((acceptedFiles: File[]) => {
-    if (acceptedFiles.length > 0) {
-      const file = acceptedFiles[0];
+    const validFiles: File[] = [];
+    const previews: string[] = [];
+    
+    acceptedFiles.forEach(file => {
       if (file.size > MAX_FILE_SIZE) {
         toast({
-          title: 'الملف كبير جداً',
-          description: 'الحد الأقصى لحجم الملف هو 50 ميجابايت',
+          title: 'ملف كبير جداً',
+          description: `${file.name} - الحد الأقصى 50 ميجابايت`,
           variant: 'destructive',
         });
         return;
       }
-      setContentFile(file);
+      validFiles.push(file);
       
       // Create preview for images
       if (file.type.startsWith('image/')) {
         const reader = new FileReader();
         reader.onload = (e) => {
-          setFilePreview(e.target?.result as string);
+          setFilePreviews(prev => [...prev, e.target?.result as string]);
         };
         reader.readAsDataURL(file);
-      } else {
-        setFilePreview(null);
       }
-    }
+    });
+    
+    setContentFiles(prev => [...prev, ...validFiles]);
   }, [toast]);
+
+  const removeFile = (index: number) => {
+    setContentFiles(prev => prev.filter((_, i) => i !== index));
+    setFilePreviews(prev => prev.filter((_, i) => i !== index));
+  };
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
-    maxFiles: 1,
-    multiple: false,
+    multiple: true,
     maxSize: MAX_FILE_SIZE
   });
 
@@ -192,60 +198,109 @@ export default function TeacherDashboard() {
       return;
     }
 
-    if (contentFile && contentFile.size > MAX_FILE_SIZE) {
-      toast({ 
-        title: 'الملف كبير جداً', 
-        description: 'الحد الأقصى لحجم الملف هو 50 ميجابايت',
-        variant: 'destructive' 
-      });
-      return;
+    // Validate files
+    for (const file of contentFiles) {
+      if (file.size > MAX_FILE_SIZE) {
+        toast({ 
+          title: 'ملف كبير جداً', 
+          description: `${file.name} - الحد الأقصى 50 ميجابايت`,
+          variant: 'destructive' 
+        });
+        return;
+      }
     }
 
     setSubmitting(true);
-    let fileUrl = null;
     
     if (uploadMethod === 'drive' && driveUrl) {
       // Convert Google Drive share URL to direct embed URL
       const driveMatch = driveUrl.match(/\/d\/([a-zA-Z0-9_-]+)/);
+      let fileUrl = driveUrl;
       if (driveMatch) {
         fileUrl = `https://drive.google.com/file/d/${driveMatch[1]}/preview`;
-      } else {
-        fileUrl = driveUrl;
       }
-    } else if (contentFile) {
-      // Sanitize filename - remove Arabic and special characters
-      const fileExt = contentFile.name.split('.').pop() || '';
-      const sanitizedName = `${Date.now()}-${Math.random().toString(36).substring(2, 8)}.${fileExt}`;
-      const { error } = await supabase.storage.from('content-files').upload(sanitizedName, contentFile);
-      if (!error) {
-        // Generate signed URL for private bucket
-        const { data } = await supabase.storage.from('content-files').createSignedUrl(sanitizedName, 60 * 60 * 24 * 365); // 1 year
-        fileUrl = data?.signedUrl || null;
-      }
-    }
-    const { error } = await supabase.from('content').insert({
-      title: contentTitle.trim(), 
-      description: contentDesc.trim() || null, 
-      content_type: contentType,
-      level: contentLevel, 
-      difficulty: contentDifficulty, 
-      file_url: fileUrl,
-      created_by: profile?.user_id
-    });
-    if (!error) {
-      toast({ title: 'تمت الإضافة بنجاح' });
-      setContentTitle(''); 
-      setContentDesc(''); 
-      setContentFile(null);
-      setFilePreview(null);
-      setDriveUrl('');
-    } else {
-      toast({ 
-        title: 'خطأ في الإضافة', 
-        description: error.message,
-        variant: 'destructive' 
+      
+      const { error } = await supabase.from('content').insert({
+        title: contentTitle.trim(), 
+        description: contentDesc.trim() || null, 
+        content_type: contentType,
+        level: contentLevel, 
+        difficulty: contentDifficulty, 
+        file_url: fileUrl,
+        created_by: profile?.user_id
       });
+      
+      if (error) {
+        toast({ 
+          title: 'خطأ في الإضافة', 
+          description: error.message,
+          variant: 'destructive' 
+        });
+      } else {
+        toast({ title: 'تمت الإضافة بنجاح' });
+      }
+    } else if (contentFiles.length > 0) {
+      // Upload multiple files
+      let successCount = 0;
+      for (let i = 0; i < contentFiles.length; i++) {
+        const file = contentFiles[i];
+        const fileExt = file.name.split('.').pop() || '';
+        const sanitizedName = `${Date.now()}-${Math.random().toString(36).substring(2, 8)}.${fileExt}`;
+        const { error: uploadError } = await supabase.storage.from('content-files').upload(sanitizedName, file);
+        
+        if (!uploadError) {
+          const { data } = await supabase.storage.from('content-files').createSignedUrl(sanitizedName, 60 * 60 * 24 * 365);
+          const fileUrl = data?.signedUrl || null;
+          
+          // Use file name as title for additional files
+          const title = contentFiles.length === 1 ? contentTitle.trim() : 
+                       i === 0 ? contentTitle.trim() : `${contentTitle.trim()} - ${file.name}`;
+          
+          const { error } = await supabase.from('content').insert({
+            title, 
+            description: contentDesc.trim() || null, 
+            content_type: contentType,
+            level: contentLevel, 
+            difficulty: contentDifficulty, 
+            file_url: fileUrl,
+            created_by: profile?.user_id
+          });
+          
+          if (!error) successCount++;
+        }
+      }
+      
+      if (successCount > 0) {
+        toast({ title: `تمت إضافة ${successCount} محتوى بنجاح` });
+      }
+    } else {
+      // No file, just add content entry
+      const { error } = await supabase.from('content').insert({
+        title: contentTitle.trim(), 
+        description: contentDesc.trim() || null, 
+        content_type: contentType,
+        level: contentLevel, 
+        difficulty: contentDifficulty, 
+        file_url: null,
+        created_by: profile?.user_id
+      });
+      
+      if (!error) {
+        toast({ title: 'تمت الإضافة بنجاح' });
+      } else {
+        toast({ 
+          title: 'خطأ في الإضافة', 
+          description: error.message,
+          variant: 'destructive' 
+        });
+      }
     }
+    
+    setContentTitle(''); 
+    setContentDesc(''); 
+    setContentFiles([]);
+    setFilePreviews([]);
+    setDriveUrl('');
     setSubmitting(false);
   };
 
@@ -596,64 +651,59 @@ export default function TeacherDashboard() {
 
                 {uploadMethod === 'file' ? (
                   <div>
-                    <Label>الملف (PDF, صور, فيديو, صوت...)</Label>
+                    <Label>الملفات (PDF, صور, فيديو, صوت... - يمكنك رفع عدة ملفات)</Label>
                     <div
                       {...getRootProps()}
-                      className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
+                      className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors ${
                         isDragActive 
                           ? 'border-primary bg-primary/10' 
-                          : contentFile 
+                          : contentFiles.length > 0 
                           ? 'border-success bg-success/10' 
                           : 'border-border hover:border-primary/50'
                       }`}
                     >
                       <input {...getInputProps()} />
-                      {contentFile ? (
-                        <div className="space-y-3">
-                          {/* Image Preview */}
-                          {filePreview && (
-                            <div className="flex justify-center">
-                              <img 
-                                src={filePreview} 
-                                alt="معاينة" 
-                                className="max-h-40 rounded-lg border border-border object-contain"
-                              />
+                      <Upload className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
+                      {isDragActive ? (
+                        <p className="text-primary">أفلت الملفات هنا...</p>
+                      ) : (
+                        <>
+                          <p className="text-foreground font-medium mb-1">اسحب وأفلت الملفات هنا</p>
+                          <p className="text-sm text-muted-foreground">PDF, صور, فيديو, صوت... (الحد الأقصى 50MB لكل ملف)</p>
+                        </>
+                      )}
+                    </div>
+                    
+                    {/* Files List */}
+                    {contentFiles.length > 0 && (
+                      <div className="mt-3 space-y-2">
+                        <p className="text-sm text-muted-foreground">{contentFiles.length} ملف محدد</p>
+                        {contentFiles.map((file, index) => (
+                          <div key={index} className="flex items-center gap-3 p-2 bg-secondary/50 rounded-lg">
+                            <FileText className="w-5 h-5 text-primary flex-shrink-0" />
+                            <div className="flex-1 min-w-0">
+                              <p className="font-medium text-sm truncate">{file.name}</p>
+                              <p className="text-xs text-muted-foreground">{(file.size / 1024 / 1024).toFixed(2)} MB</p>
                             </div>
-                          )}
-                          <div className="flex items-center justify-center gap-3">
-                            <FileText className="w-8 h-8 text-success" />
-                            <div className="flex-1 text-right">
-                              <p className="font-medium text-foreground">{contentFile.name}</p>
-                              <p className="text-xs text-muted-foreground">{(contentFile.size / 1024 / 1024).toFixed(2)} MB</p>
-                            </div>
+                            {filePreviews[index] && (
+                              <img src={filePreviews[index]} alt="معاينة" className="w-10 h-10 rounded object-cover" />
+                            )}
                             <Button
                               type="button"
                               variant="ghost"
                               size="icon"
+                              className="h-8 w-8"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                setContentFile(null);
-                                setFilePreview(null);
+                                removeFile(index);
                               }}
                             >
                               <X className="w-4 h-4" />
                             </Button>
                           </div>
-                        </div>
-                      ) : (
-                        <>
-                          <Upload className="w-10 h-10 mx-auto mb-3 text-muted-foreground" />
-                          {isDragActive ? (
-                            <p className="text-primary">أفلت الملف هنا...</p>
-                          ) : (
-                            <>
-                              <p className="text-foreground font-medium mb-1">اسحب وأفلت أي ملف هنا</p>
-                              <p className="text-sm text-muted-foreground">PDF, صور, فيديو, صوت... (الحد الأقصى 50MB)</p>
-                            </>
-                          )}
-                        </>
-                      )}
-                    </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 ) : (
                   <div>
