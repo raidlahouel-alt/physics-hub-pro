@@ -73,34 +73,22 @@ export function HeroSection() {
           {/* Stats */}
           <div className="grid grid-cols-3 gap-6 md:gap-12 max-w-2xl mx-auto mt-16 animate-slide-up" style={{ animationDelay: '0.6s' }}>
             {[
-              { value: '24/7', label: 'متاح دائماً', hasIcon: false },
-              { value: '∞', label: 'دروس وتمارين', hasIcon: true },
-              { value: '2', label: 'مستويات', hasIcon: false }
+              { value: '24/7', label: 'متاح دائماً' },
+              { value: '∞', label: 'دروس وتمارين' },
+              { value: '2', label: 'مستويات' }
             ].map((stat, index) => (
               <div 
                 key={index} 
                 className="text-center group cursor-default"
               >
                 <div className="relative inline-flex flex-col items-center">
-                  {/* Glow effect behind */}
-                  <div className="absolute inset-0 bg-primary/20 blur-xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                  
-                  {/* Icon for middle stat */}
-                  {stat.hasIcon && (
-                    <div className="relative w-12 h-12 rounded-full bg-gradient-to-br from-primary to-accent p-[2px] mb-3 group-hover:scale-110 transition-transform duration-300">
-                      <div className="w-full h-full rounded-full bg-card flex items-center justify-center">
-                        <Atom className="w-6 h-6 text-primary" />
-                      </div>
-                    </div>
-                  )}
-                  
                   {/* Value */}
-                  <div className="text-3xl md:text-5xl font-bold text-primary group-hover:scale-110 transition-transform duration-300">
+                  <div className="text-3xl md:text-5xl font-bold bg-gradient-to-b from-primary to-primary/70 bg-clip-text text-transparent group-hover:from-primary group-hover:to-accent transition-all duration-300">
                     {stat.value}
                   </div>
                   
                   {/* Label */}
-                  <div className="text-sm md:text-base text-muted-foreground mt-1 group-hover:text-foreground transition-colors duration-300">
+                  <div className="text-sm md:text-base text-muted-foreground/80 mt-2 group-hover:text-muted-foreground transition-colors duration-300">
                     {stat.label}
                   </div>
                 </div>
