@@ -47,7 +47,7 @@ export function HeroSection() {
           {/* CTA Buttons */}
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-slide-up" style={{ animationDelay: '0.4s' }}>
             {user ? (
-              <Button variant="hero" size="xl" asChild className="animate-pulse-ring">
+              <Button variant="hero" size="xl" asChild>
                 <Link to="/levels">
                   <GraduationCap className="w-5 h-5 ml-2" />
                   ابدأ التعلم
