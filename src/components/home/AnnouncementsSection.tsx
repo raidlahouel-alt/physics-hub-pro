@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Announcement } from '@/lib/types';
-import { Bell, Calendar, Megaphone, AlertTriangle, Info, ChevronLeft } from 'lucide-react';
+import { Bell, Calendar, Megaphone, AlertTriangle, Info, ChevronLeft, Sparkles } from 'lucide-react';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import { Link } from 'react-router-dom';
@@ -79,17 +79,18 @@ export function AnnouncementsSection() {
   return (
     <section className="py-20 bg-gradient-to-b from-background via-secondary/10 to-background relative overflow-hidden">
       {/* Decorative elements */}
-      <div className="absolute top-0 left-0 w-96 h-96 bg-primary/5 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2" />
-      <div className="absolute bottom-0 right-0 w-96 h-96 bg-accent/5 rounded-full blur-3xl translate-x-1/2 translate-y-1/2" />
+      <div className="absolute top-0 left-0 w-96 h-96 bg-primary/5 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2 animate-float" />
+      <div className="absolute bottom-0 right-0 w-96 h-96 bg-accent/5 rounded-full blur-3xl translate-x-1/2 translate-y-1/2 animate-float" style={{ animationDelay: '-3s' }} />
       
       <div className="container mx-auto px-4 relative">
         <div className="text-center mb-12">
-          <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-full text-sm font-medium mb-4 animate-pulse">
-            <Bell className="w-4 h-4" />
-            إعلانات جديدة
+          <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-full text-sm font-medium mb-4 animate-bounce-in group cursor-default hover:bg-primary/20 transition-colors">
+            <Bell className="w-4 h-4 group-hover:animate-wiggle" />
+            <span>إعلانات جديدة</span>
+            <Sparkles className="w-3 h-3 animate-pulse" />
           </div>
-          <h2 className="text-4xl font-bold gradient-text mb-4">آخر الإعلانات والأخبار</h2>
-          <p className="text-muted-foreground max-w-2xl mx-auto">
+          <h2 className="text-4xl font-bold gradient-text mb-4 animate-slide-up">آخر الإعلانات والأخبار</h2>
+          <p className="text-muted-foreground max-w-2xl mx-auto animate-slide-up" style={{ animationDelay: '0.1s' }}>
             تابع آخر المستجدات والإعلانات المهمة من الأستاذ هزيل رفيق
           </p>
         </div>
@@ -98,22 +99,25 @@ export function AnnouncementsSection() {
           {announcements.map((announcement, index) => (
             <div
               key={announcement.id}
-              className={`glass-card p-6 border-r-4 bg-gradient-to-l ${getAnnouncementColor(index)} hover:shadow-lg transition-all duration-300 hover:-translate-y-1 animate-fade-in`}
-              style={{ animationDelay: `${index * 100}ms` }}
+              className={`glass-card p-6 border-r-4 bg-gradient-to-l ${getAnnouncementColor(index)} group cursor-default animate-slide-up relative overflow-hidden`}
+              style={{ animationDelay: `${index * 0.1}s` }}
             >
-              <div className="flex items-start gap-4">
-                <div className={`w-12 h-12 rounded-xl ${getIconBgColor(index)} flex items-center justify-center flex-shrink-0 shadow-lg`}>
+              {/* Shimmer effect on hover */}
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent transform -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
+              
+              <div className="flex items-start gap-4 relative">
+                <div className={`w-12 h-12 rounded-xl ${getIconBgColor(index)} flex items-center justify-center flex-shrink-0 shadow-lg group-hover:scale-110 group-hover:rotate-6 transition-all duration-300`}>
                   {getAnnouncementIcon(index)}
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-start justify-between gap-4 mb-2">
-                    <h3 className="font-bold text-lg text-foreground line-clamp-1">{announcement.title}</h3>
-                    <span className="text-xs bg-secondary px-3 py-1 rounded-full text-muted-foreground whitespace-nowrap">
+                    <h3 className="font-bold text-lg text-foreground line-clamp-1 group-hover:text-primary transition-colors duration-300">{announcement.title}</h3>
+                    <span className="text-xs bg-secondary/80 px-3 py-1 rounded-full text-muted-foreground whitespace-nowrap group-hover:bg-secondary transition-colors">
                       {getLevelBadge(announcement.level)}
                     </span>
                   </div>
-                  <p className="text-muted-foreground mb-3 line-clamp-2">{announcement.content}</p>
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <p className="text-muted-foreground mb-3 line-clamp-2 group-hover:text-foreground/70 transition-colors">{announcement.content}</p>
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground group-hover:text-muted-foreground/80 transition-colors">
                     <Calendar className="w-3.5 h-3.5" />
                     <span>
                       {announcement.created_at && format(new Date(announcement.created_at), 'EEEE، d MMMM yyyy', { locale: ar })}
@@ -126,10 +130,10 @@ export function AnnouncementsSection() {
         </div>
 
         {announcements.length >= 5 && (
-          <div className="text-center mt-8">
+          <div className="text-center mt-8 animate-fade-in" style={{ animationDelay: '0.5s' }}>
             <Link
               to="/announcements"
-              className="inline-flex items-center gap-2 text-primary hover:text-primary/80 font-medium transition-colors"
+              className="inline-flex items-center gap-2 text-primary hover:text-primary/80 font-medium transition-all duration-300 hover:gap-3 link-underline"
             >
               عرض جميع الإعلانات
               <ChevronLeft className="w-4 h-4" />
