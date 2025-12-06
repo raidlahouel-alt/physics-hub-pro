@@ -74,7 +74,7 @@ export function HeroSection() {
           <div className="grid grid-cols-3 gap-6 md:gap-12 max-w-2xl mx-auto mt-16 animate-slide-up" style={{ animationDelay: '0.6s' }}>
             {[
               { value: '24/7', label: 'متاح دائماً' },
-              { value: '∞', label: 'دروس وتمارين' },
+              { value: '+100', label: 'دروس وتمارين' },
               { value: '2', label: 'مستويات' }
             ].map((stat, index) => (
               <div 

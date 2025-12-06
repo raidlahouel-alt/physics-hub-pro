@@ -21,6 +21,7 @@ export interface Content {
   level: StudentLevel;
   difficulty: number | null;
   file_url: string | null;
+  file_urls?: string[] | null;
   created_by: string | null;
   created_at: string;
   updated_at: string;
