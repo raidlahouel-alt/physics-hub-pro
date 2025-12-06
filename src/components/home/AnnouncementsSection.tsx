@@ -14,6 +14,7 @@ export function AnnouncementsSection() {
 
   useEffect(() => {
     const fetchAnnouncements = async () => {
+      console.log('Fetching announcements...');
       const { data, error } = await supabase
         .from('announcements')
         .select('*')
@@ -21,6 +22,8 @@ export function AnnouncementsSection() {
         .order('created_at', { ascending: false })
         .limit(5);
 
+      console.log('Announcements data:', data, 'Error:', error);
+      
       if (!error && data) {
         setAnnouncements(data as Announcement[]);
       }
@@ -44,7 +47,13 @@ export function AnnouncementsSection() {
   }
 
   if (announcements.length === 0) {
-    return null;
+    return (
+      <section className="py-20 bg-gradient-to-b from-background via-secondary/10 to-background">
+        <div className="container mx-auto px-4 text-center">
+          <p className="text-muted-foreground">لا توجد إعلانات حالياً</p>
+        </div>
+      </section>
+    );
   }
 
   const getAnnouncementIcon = (index: number) => {
