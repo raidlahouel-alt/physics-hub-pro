@@ -35,6 +35,7 @@ export interface Announcement {
   is_active: boolean;
   created_by: string | null;
   created_at: string;
+  scheduled_date: string | null;
 }
 
 export interface Comment {

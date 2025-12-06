@@ -22,7 +22,7 @@ export function AnnouncementsSection() {
     try {
       const { data, error } = await supabase
         .from('announcements')
-        .select('id, title, content, level, is_active, created_by, created_at')
+        .select('id, title, content, level, is_active, created_by, created_at, scheduled_date')
         .eq('is_active', true)
         .order('created_at', { ascending: false })
         .limit(5);
@@ -41,7 +41,8 @@ export function AnnouncementsSection() {
           level: item.level as StudentLevel | null,
           is_active: item.is_active ?? true,
           created_by: item.created_by,
-          created_at: item.created_at ?? ''
+          created_at: item.created_at ?? '',
+          scheduled_date: item.scheduled_date ?? null
         }));
         setAnnouncements(formattedData);
       }
@@ -210,11 +211,19 @@ export function AnnouncementsSection() {
                     </span>
                   </div>
                   <p className="text-muted-foreground mb-2 text-sm line-clamp-2">{announcement.content}</p>
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <Calendar className="w-3 h-3" />
-                    <span>
-                      {announcement.created_at && format(new Date(announcement.created_at), 'EEEE، d MMMM yyyy', { locale: ar })}
-                    </span>
+                  <div className="flex items-center gap-3 text-xs text-muted-foreground flex-wrap">
+                    <div className="flex items-center gap-1">
+                      <Calendar className="w-3 h-3" />
+                      <span>
+                        {announcement.created_at && format(new Date(announcement.created_at), 'EEEE، d MMMM yyyy', { locale: ar })}
+                      </span>
+                    </div>
+                    {announcement.scheduled_date && (
+                      <div className="flex items-center gap-1 bg-primary/10 text-primary px-2 py-0.5 rounded-full">
+                        <Calendar className="w-3 h-3" />
+                        <span>موعد: {format(new Date(announcement.scheduled_date), 'd MMMM yyyy', { locale: ar })}</span>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
