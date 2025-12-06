@@ -1,4 +1,4 @@
-import { BookOpen, Mail, Send, Facebook } from 'lucide-react';
+import { BookOpen, Mail, Facebook } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useScrollAnimation } from '@/hooks/useScrollAnimation';
 
@@ -40,20 +40,11 @@ export function Footer() {
             <h4 className="font-semibold text-foreground mb-4">تواصل معنا</h4>
             <div className="flex flex-col gap-3">
               <a 
-                href="mailto:hazil.rafik@email.com" 
+                href="mailto:rafikhh203@gmail.com" 
                 className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors text-sm"
               >
                 <Mail className="w-4 h-4" />
-                hazil.rafik@email.com
-              </a>
-              <a 
-                href="https://t.me/hazil_rafik" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors text-sm"
-              >
-                <Send className="w-4 h-4" />
-                @hazil_rafik
+                rafikhh203@gmail.com
               </a>
               <a 
                 href="https://www.facebook.com/share/19P9q5FHke/" 
