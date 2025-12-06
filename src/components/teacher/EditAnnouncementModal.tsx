@@ -28,6 +28,7 @@ export function EditAnnouncementModal({ announcement, open, onOpenChange, onSucc
   const [content, setContent] = useState(announcement.content);
   const [level, setLevel] = useState<StudentLevel | ''>(announcement.level || '');
   const [isActive, setIsActive] = useState(announcement.is_active);
+  const [scheduledDate, setScheduledDate] = useState(announcement.scheduled_date || '');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -51,7 +52,8 @@ export function EditAnnouncementModal({ announcement, open, onOpenChange, onSucc
           title: title.trim(),
           content: content.trim(),
           level: level || null,
-          is_active: isActive
+          is_active: isActive,
+          scheduled_date: scheduledDate || null
         })
         .eq('id', announcement.id);
 
@@ -73,7 +75,7 @@ export function EditAnnouncementModal({ announcement, open, onOpenChange, onSucc
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>تعديل الإعلان</DialogTitle>
         </DialogHeader>
@@ -105,6 +107,16 @@ export function EditAnnouncementModal({ announcement, open, onOpenChange, onSucc
               <option value="second_year">ثانية ثانوي</option>
               <option value="baccalaureate">بكالوريا</option>
             </select>
+          </div>
+
+          <div>
+            <Label>تاريخ الإعلان (اختياري)</Label>
+            <Input 
+              type="date" 
+              value={scheduledDate} 
+              onChange={(e) => setScheduledDate(e.target.value)} 
+            />
+            <p className="text-xs text-muted-foreground mt-1">حدد تاريخ معين للإعلان (مثل موعد حصة أو اختبار)</p>
           </div>
 
           <div className="flex items-center gap-3">

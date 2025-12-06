@@ -62,6 +62,7 @@ export default function TeacherDashboard() {
   // Announcement form
   const [annTitle, setAnnTitle] = useState('');
   const [annContent, setAnnContent] = useState('');
+  const [annScheduledDate, setAnnScheduledDate] = useState('');
   const [annLevel, setAnnLevel] = useState<StudentLevel | ''>('');
 
   // Memoized student counts by level
@@ -269,12 +270,16 @@ export default function TeacherDashboard() {
 
     setSubmitting(true);
     const { error } = await supabase.from('announcements').insert({
-      title: annTitle.trim(), content: annContent.trim(), level: annLevel || null, created_by: profile?.user_id
+      title: annTitle.trim(), 
+      content: annContent.trim(), 
+      level: annLevel || null, 
+      scheduled_date: annScheduledDate || null,
+      created_by: profile?.user_id
     });
     
     if (!error) {
       toast({ title: 'تم نشر الإعلان' });
-      setAnnTitle(''); setAnnContent(''); setAnnLevel('');
+      setAnnTitle(''); setAnnContent(''); setAnnLevel(''); setAnnScheduledDate('');
       fetchStats();
     } else {
       toast({ title: 'خطأ في النشر', description: error.message, variant: 'destructive' });
@@ -527,6 +532,16 @@ export default function TeacherDashboard() {
                   <select className="w-full h-9 px-3 rounded-lg border border-border bg-secondary text-sm" value={annLevel} onChange={(e) => setAnnLevel(e.target.value as StudentLevel)}>
                     <option value="">الكل</option><option value="second_year">ثانية ثانوي</option><option value="baccalaureate">بكالوريا</option>
                   </select>
+                </div>
+                <div>
+                  <Label className="text-sm">تاريخ الإعلان (اختياري)</Label>
+                  <Input 
+                    type="date" 
+                    value={annScheduledDate} 
+                    onChange={(e) => setAnnScheduledDate(e.target.value)} 
+                    className="h-9"
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">حدد تاريخ معين للإعلان (مثل موعد حصة أو اختبار)</p>
                 </div>
                 <Button type="submit" variant="hero" className="w-full" disabled={submitting} size="sm">
                   {submitting && <Loader2 className="w-4 h-4 animate-spin ml-2" />}نشر الإعلان

@@ -27,7 +27,7 @@ interface CommentWithExtras {
 }
 
 export function QuestionBox() {
-  const { user, isTeacher } = useAuth();
+  const { user, isTeacher, profile } = useAuth();
   const [questions, setQuestions] = useState<CommentWithExtras[]>([]);
   const [newQuestion, setNewQuestion] = useState('');
   const [loading, setLoading] = useState(true);
@@ -195,27 +195,27 @@ export function QuestionBox() {
 
   return (
     <Card className="mb-8">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-xl">
-          <HelpCircle className="h-6 w-6 text-primary" />
+      <CardHeader className="pb-3">
+        <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
+          <HelpCircle className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
           اسأل الأستاذ
         </CardTitle>
       </CardHeader>
-      <CardContent>
-        {/* Question input */}
-        <div className="flex gap-3 mb-6">
+      <CardContent className="space-y-4">
+        {/* Question input - mobile optimized */}
+        <div className="space-y-2 sm:space-y-0 sm:flex sm:gap-3">
           <Textarea
             placeholder="اكتب سؤالك هنا..."
             value={newQuestion}
             onChange={(e) => setNewQuestion(e.target.value)}
-            className="resize-none"
+            className="resize-none min-h-[80px]"
             rows={3}
             maxLength={1000}
           />
           <Button 
             onClick={handleSubmit} 
             disabled={!newQuestion.trim() || submitting}
-            className="shrink-0"
+            className="w-full sm:w-auto sm:shrink-0"
           >
             <Send className="h-4 w-4 ml-2" />
             إرسال
@@ -223,81 +223,92 @@ export function QuestionBox() {
         </div>
 
         {/* Questions list */}
-        <div className="space-y-4">
-          <h4 className="flex items-center gap-2 font-semibold text-muted-foreground">
+        <div className="space-y-3">
+          <h4 className="flex items-center gap-2 font-semibold text-muted-foreground text-sm">
             <MessageSquare className="h-4 w-4" />
             الأسئلة السابقة ({questions.length})
           </h4>
           
           {loading ? (
-            <div className="text-center py-4 text-muted-foreground">جاري التحميل...</div>
+            <div className="text-center py-4 text-muted-foreground text-sm">جاري التحميل...</div>
           ) : questions.length === 0 ? (
-            <div className="text-center py-4 text-muted-foreground">لا توجد أسئلة بعد</div>
+            <div className="text-center py-4 text-muted-foreground text-sm">لا توجد أسئلة بعد</div>
           ) : (
-            <div className="space-y-4 max-h-[500px] overflow-y-auto">
+            <div className="space-y-3 max-h-[400px] sm:max-h-[500px] overflow-y-auto">
               {questions.map((question: any) => (
                 <div key={question.id} className="rounded-lg border border-border overflow-hidden">
                   {/* Question */}
-                  <div className="flex gap-3 p-4 bg-muted/30">
-                    <Avatar className="h-10 w-10 shrink-0">
-                      <AvatarFallback>
-                        {getInitials(question.profile?.full_name || '')}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1 flex-wrap">
-                        <span className="font-medium">
-                          {question.profile?.full_name || 'طالب'}
-                        </span>
-                        {question.isTeacherComment && (
-                          <Badge variant="secondary" className="text-xs">
-                            <GraduationCap className="h-3 w-3 ml-1" />
-                            أستاذ
-                          </Badge>
-                        )}
-                        <span className="text-xs text-muted-foreground">
-                          {formatDistanceToNow(new Date(question.created_at), { 
-                            addSuffix: true, 
-                            locale: ar 
-                          })}
-                        </span>
-                      </div>
-                      <p className="text-sm break-words">{question.message}</p>
-                      
-                      {/* Reply button for teachers */}
-                      {isTeacher && (
+                  <div className="p-3 sm:p-4 bg-muted/30">
+                    <div className="flex gap-2 sm:gap-3">
+                      <Avatar className="h-8 w-8 sm:h-10 sm:w-10 shrink-0">
+                        <AvatarFallback className="text-xs sm:text-sm">
+                          {getInitials(question.profile?.full_name || '')}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="font-medium text-sm">
+                                {question.profile?.full_name || 'طالب'}
+                              </span>
+                              {question.isTeacherComment && (
+                                <Badge variant="secondary" className="text-xs py-0">
+                                  <GraduationCap className="h-3 w-3 ml-1" />
+                                  أستاذ
+                                </Badge>
+                              )}
+                            </div>
+                            <span className="text-xs text-muted-foreground">
+                              {formatDistanceToNow(new Date(question.created_at), { 
+                                addSuffix: true, 
+                                locale: ar 
+                              })}
+                            </span>
+                          </div>
+                          {(user?.id === question.user_id || isTeacher) && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="shrink-0 h-7 w-7 text-destructive hover:text-destructive"
+                              onClick={() => handleDelete(question.id)}
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </Button>
+                          )}
+                        </div>
+                        <p className="text-sm mt-2 break-words">{question.message}</p>
+                        
+                        {/* Reply button - for everyone */}
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="mt-2 text-primary"
+                          className="mt-2 text-primary h-8 px-2 text-xs"
                           onClick={() => setReplyingTo(replyingTo === question.id ? null : question.id)}
                         >
-                          <Reply className="h-4 w-4 ml-1" />
+                          <Reply className="h-3.5 w-3.5 ml-1" />
                           رد
                         </Button>
-                      )}
+                      </div>
                     </div>
-                    {(user?.id === question.user_id || isTeacher) && (
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="shrink-0 text-destructive hover:text-destructive"
-                        onClick={() => handleDelete(question.id)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    )}
                   </div>
 
                   {/* Reply input */}
                   {replyingTo === question.id && (
                     <div className="p-3 bg-primary/5 border-t border-border">
+                      <div className="flex items-center gap-2 mb-2 text-xs text-muted-foreground">
+                        <span>الرد باسم:</span>
+                        <span className="font-medium text-foreground">{profile?.full_name || 'مستخدم'}</span>
+                        {isTeacher && (
+                          <Badge variant="secondary" className="text-xs py-0">أستاذ</Badge>
+                        )}
+                      </div>
                       <div className="flex gap-2">
                         <Textarea
                           placeholder="اكتب ردك..."
                           value={replyText}
                           onChange={(e) => setReplyText(e.target.value)}
-                          className="resize-none"
+                          className="resize-none min-h-[60px]"
                           rows={2}
                           maxLength={1000}
                         />
@@ -305,6 +316,7 @@ export function QuestionBox() {
                           onClick={() => handleReply(question.id)}
                           disabled={!replyText.trim() || submitting}
                           size="icon"
+                          className="shrink-0"
                         >
                           <Send className="h-4 w-4" />
                         </Button>
@@ -316,42 +328,46 @@ export function QuestionBox() {
                   {question.replies && question.replies.length > 0 && (
                     <div className="border-t border-border">
                       {question.replies.map((reply: any) => (
-                        <div key={reply.id} className="flex gap-3 p-3 pr-12 bg-background border-b border-border/50 last:border-b-0">
-                          <Avatar className="h-8 w-8 shrink-0">
+                        <div key={reply.id} className="flex gap-2 sm:gap-3 p-3 pr-6 sm:pr-12 bg-background border-b border-border/50 last:border-b-0">
+                          <Avatar className="h-7 w-7 sm:h-8 sm:w-8 shrink-0">
                             <AvatarFallback className="text-xs">
                               {getInitials(reply.profile?.full_name || '')}
                             </AvatarFallback>
                           </Avatar>
                           <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 mb-1 flex-wrap">
-                              <span className="font-medium text-sm">
-                                {reply.profile?.full_name || 'مستخدم'}
-                              </span>
-                              {reply.isTeacherComment && (
-                                <Badge variant="default" className="text-xs bg-primary">
-                                  <GraduationCap className="h-3 w-3 ml-1" />
-                                  أستاذ
-                                </Badge>
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <span className="font-medium text-sm">
+                                    {reply.profile?.full_name || 'مستخدم'}
+                                  </span>
+                                  {reply.isTeacherComment && (
+                                    <Badge variant="default" className="text-xs bg-primary py-0">
+                                      <GraduationCap className="h-3 w-3 ml-1" />
+                                      أستاذ
+                                    </Badge>
+                                  )}
+                                </div>
+                                <span className="text-xs text-muted-foreground">
+                                  {formatDistanceToNow(new Date(reply.created_at), { 
+                                    addSuffix: true, 
+                                    locale: ar 
+                                  })}
+                                </span>
+                              </div>
+                              {(user?.id === reply.user_id || isTeacher) && (
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="shrink-0 h-6 w-6 text-destructive hover:text-destructive"
+                                  onClick={() => handleDelete(reply.id)}
+                                >
+                                  <Trash2 className="h-3 w-3" />
+                                </Button>
                               )}
-                              <span className="text-xs text-muted-foreground">
-                                {formatDistanceToNow(new Date(reply.created_at), { 
-                                  addSuffix: true, 
-                                  locale: ar 
-                                })}
-                              </span>
                             </div>
-                            <p className="text-sm break-words">{reply.message}</p>
+                            <p className="text-sm mt-1 break-words">{reply.message}</p>
                           </div>
-                          {(user?.id === reply.user_id || isTeacher) && (
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="shrink-0 h-8 w-8 text-destructive hover:text-destructive"
-                              onClick={() => handleDelete(reply.id)}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          )}
                         </div>
                       ))}
                     </div>
