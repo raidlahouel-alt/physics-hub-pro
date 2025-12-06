@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Announcement } from '@/lib/types';
+import { Announcement, StudentLevel } from '@/lib/types';
 import { Bell, Calendar, Megaphone, AlertTriangle, Info, ChevronLeft, Sparkles } from 'lucide-react';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
@@ -14,20 +14,39 @@ export function AnnouncementsSection() {
 
   useEffect(() => {
     const fetchAnnouncements = async () => {
-      console.log('Fetching announcements...');
-      const { data, error } = await supabase
-        .from('announcements')
-        .select('*')
-        .eq('is_active', true)
-        .order('created_at', { ascending: false })
-        .limit(5);
+      try {
+        const { data, error } = await supabase
+          .from('announcements')
+          .select('id, title, content, level, is_active, created_by, created_at')
+          .eq('is_active', true)
+          .order('created_at', { ascending: false })
+          .limit(5);
 
-      console.log('Announcements data:', data, 'Error:', error);
-      
-      if (!error && data) {
-        setAnnouncements(data as Announcement[]);
+        console.log('Fetched announcements:', data, error);
+
+        if (error) {
+          console.error('Error fetching announcements:', error);
+          setLoading(false);
+          return;
+        }
+        
+        if (data) {
+          const formattedData: Announcement[] = data.map(item => ({
+            id: item.id,
+            title: item.title,
+            content: item.content,
+            level: item.level as StudentLevel | null,
+            is_active: item.is_active ?? true,
+            created_by: item.created_by,
+            created_at: item.created_at ?? ''
+          }));
+          setAnnouncements(formattedData);
+        }
+      } catch (err) {
+        console.error('Unexpected error:', err);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     };
 
     fetchAnnouncements();
