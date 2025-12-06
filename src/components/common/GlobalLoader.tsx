@@ -1,47 +1,37 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
 
 export function GlobalLoader() {
   const location = useLocation();
-  const [isLoading, setIsLoading] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [visible, setVisible] = useState(false);
+  const timeoutRef = useRef<NodeJS.Timeout>();
 
   useEffect(() => {
-    setIsLoading(true);
-    setProgress(0);
+    // Start loading
+    setVisible(true);
+    setProgress(30);
 
-    // Simulate progress
-    const progressInterval = setInterval(() => {
-      setProgress(prev => {
-        if (prev >= 90) {
-          clearInterval(progressInterval);
-          return 90;
-        }
-        return prev + 10;
-      });
-    }, 50);
-
-    // Complete loading
-    const timeout = setTimeout(() => {
+    // Quick progress
+    timeoutRef.current = setTimeout(() => {
       setProgress(100);
       setTimeout(() => {
-        setIsLoading(false);
+        setVisible(false);
         setProgress(0);
-      }, 200);
-    }, 300);
+      }, 150);
+    }, 100);
 
     return () => {
-      clearInterval(progressInterval);
-      clearTimeout(timeout);
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
     };
   }, [location.pathname]);
 
-  if (!isLoading && progress === 0) return null;
+  if (!visible) return null;
 
   return (
-    <div className="fixed top-0 left-0 right-0 z-[100] h-1">
+    <div className="fixed top-0 left-0 right-0 z-[100] h-0.5">
       <div
-        className="h-full bg-gradient-to-r from-primary via-accent to-primary transition-all duration-200 ease-out shadow-[0_0_10px_hsl(var(--primary))]"
+        className="h-full bg-primary transition-all duration-150 ease-out"
         style={{ width: `${progress}%` }}
       />
     </div>
