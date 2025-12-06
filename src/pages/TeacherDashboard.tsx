@@ -7,10 +7,11 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { Profile, ContentType, StudentLevel, Content, Announcement } from '@/lib/types';
-import { Users, Plus, Loader2, Upload, Bell, FileText, X, Trash2, BookOpen, ClipboardList, MessageSquare, Search, BarChart3, GraduationCap, Megaphone, FileStack } from 'lucide-react';
+import { Users, Plus, Loader2, Upload, Bell, FileText, X, Trash2, BookOpen, ClipboardList, Search, Megaphone, FileStack, Edit } from 'lucide-react';
 import { useDropzone } from 'react-dropzone';
-import { OnlineStatusIndicator } from '@/components/common/OnlineStatusIndicator';
 import { z } from 'zod';
+import { EditContentModal } from '@/components/teacher/EditContentModal';
+import { EditAnnouncementModal } from '@/components/teacher/EditAnnouncementModal';
 
 // Validation schemas
 const contentSchema = z.object({
@@ -37,6 +38,10 @@ export default function TeacherDashboard() {
   const [searchQuery, setSearchQuery] = useState('');
   const [stats, setStats] = useState({ lessons: 0, summaries: 0, exercises: 0, announcements: 0 });
 
+  // Edit modals
+  const [editingContent, setEditingContent] = useState<Content | null>(null);
+  const [editingAnnouncement, setEditingAnnouncement] = useState<Announcement | null>(null);
+
   // Content form
   const [contentTitle, setContentTitle] = useState('');
   const [contentDesc, setContentDesc] = useState('');
@@ -57,7 +62,6 @@ export default function TeacherDashboard() {
   // Dropzone for multiple file upload
   const onDrop = useCallback((acceptedFiles: File[]) => {
     const validFiles: File[] = [];
-    const previews: string[] = [];
     
     acceptedFiles.forEach(file => {
       if (file.size > MAX_FILE_SIZE) {
@@ -381,6 +385,7 @@ export default function TeacherDashboard() {
     if (!error) {
       toast({ title: 'تم حذف المحتوى بنجاح' });
       fetchData();
+      fetchStats();
     } else {
       toast({ 
         title: 'خطأ في الحذف', 
@@ -398,6 +403,7 @@ export default function TeacherDashboard() {
     if (!error) {
       toast({ title: 'تم حذف الإعلان بنجاح' });
       fetchData();
+      fetchStats();
     } else {
       toast({ 
         title: 'خطأ في الحذف', 
@@ -770,6 +776,7 @@ export default function TeacherDashboard() {
                 <div className="space-y-3">
                   {contents.map((c) => {
                     const Icon = getContentTypeIcon(c.content_type);
+                    const filesCount = c.file_urls?.length || (c.file_url ? 1 : 0);
                     return (
                       <div key={c.id} className="flex items-center justify-between p-4 bg-secondary rounded-lg">
                         <div className="flex items-center gap-3 flex-1">
@@ -780,20 +787,31 @@ export default function TeacherDashboard() {
                             <div className="font-medium">{c.title}</div>
                             <div className="text-xs text-muted-foreground">
                               {getContentTypeLabel(c.content_type)} • {getLevelLabel(c.level)} • صعوبة: {c.difficulty}/3
+                              {filesCount > 0 && ` • ${filesCount} ملف`}
                             </div>
                             <div className="text-xs text-muted-foreground">
                               تاريخ الإضافة: {new Date(c.created_at).toLocaleDateString('ar-DZ')}
                             </div>
                           </div>
                         </div>
-                        <Button 
-                          variant="ghost" 
-                          size="icon"
-                          onClick={() => handleDeleteContent(c.id)}
-                          className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
+                        <div className="flex gap-2">
+                          <Button 
+                            variant="ghost" 
+                            size="icon"
+                            onClick={() => setEditingContent(c)}
+                            className="text-primary hover:text-primary hover:bg-primary/10"
+                          >
+                            <Edit className="w-4 h-4" />
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="icon"
+                            onClick={() => handleDeleteContent(c.id)}
+                            className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
                       </div>
                     );
                   })}
@@ -825,14 +843,24 @@ export default function TeacherDashboard() {
                           </div>
                         </div>
                       </div>
-                      <Button 
-                        variant="ghost" 
-                        size="icon"
-                        onClick={() => handleDeleteAnnouncement(a.id)}
-                        className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
+                      <div className="flex gap-2">
+                        <Button 
+                          variant="ghost" 
+                          size="icon"
+                          onClick={() => setEditingAnnouncement(a)}
+                          className="text-primary hover:text-primary hover:bg-primary/10"
+                        >
+                          <Edit className="w-4 h-4" />
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="icon"
+                          onClick={() => handleDeleteAnnouncement(a.id)}
+                          className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -841,6 +869,31 @@ export default function TeacherDashboard() {
           )}
         </div>
       </div>
+
+      {/* Edit Modals */}
+      {editingContent && (
+        <EditContentModal
+          content={editingContent}
+          open={!!editingContent}
+          onOpenChange={(open) => !open && setEditingContent(null)}
+          onSuccess={() => {
+            fetchData();
+            fetchStats();
+          }}
+        />
+      )}
+
+      {editingAnnouncement && (
+        <EditAnnouncementModal
+          announcement={editingAnnouncement}
+          open={!!editingAnnouncement}
+          onOpenChange={(open) => !open && setEditingAnnouncement(null)}
+          onSuccess={() => {
+            fetchData();
+            fetchStats();
+          }}
+        />
+      )}
     </Layout>
   );
 }
