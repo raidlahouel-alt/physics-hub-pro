@@ -1,19 +1,28 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Announcement, StudentLevel } from '@/lib/types';
-import { Bell, Calendar, Megaphone, AlertTriangle, Info, ChevronLeft, Sparkles } from 'lucide-react';
+import { Bell, Calendar, Megaphone, AlertTriangle, Info, ChevronLeft, Sparkles, Lock } from 'lucide-react';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import { Link } from 'react-router-dom';
 import { useScrollAnimation } from '@/hooks/useScrollAnimation';
+import { useAuth } from '@/hooks/useAuth';
+import { Button } from '@/components/ui/button';
 
 export function AnnouncementsSection() {
   const { ref, isVisible } = useScrollAnimation(0.1);
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [loading, setLoading] = useState(true);
+  const { user } = useAuth();
 
   useEffect(() => {
     const fetchAnnouncements = async () => {
+      // Only fetch if user is authenticated
+      if (!user) {
+        setLoading(false);
+        return;
+      }
+
       try {
         const { data, error } = await supabase
           .from('announcements')
@@ -21,8 +30,6 @@ export function AnnouncementsSection() {
           .eq('is_active', true)
           .order('created_at', { ascending: false })
           .limit(5);
-
-        console.log('Fetched announcements:', data, error);
 
         if (error) {
           console.error('Error fetching announcements:', error);
@@ -50,7 +57,42 @@ export function AnnouncementsSection() {
     };
 
     fetchAnnouncements();
-  }, []);
+  }, [user]);
+
+  // Show login prompt for unauthenticated users
+  if (!user) {
+    return (
+      <section ref={ref} className="py-20 bg-gradient-to-b from-background via-secondary/10 to-background relative overflow-hidden">
+        <div className="absolute top-0 left-0 w-96 h-96 bg-primary/5 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2 animate-float" />
+        <div className="absolute bottom-0 right-0 w-96 h-96 bg-accent/5 rounded-full blur-3xl translate-x-1/2 translate-y-1/2 animate-float" style={{ animationDelay: '-3s' }} />
+        
+        <div className="container mx-auto px-4 relative">
+          <div className={`text-center transition-all duration-700 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
+            <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-full text-sm font-medium mb-4">
+              <Bell className="w-4 h-4" />
+              <span>إعلانات جديدة</span>
+            </div>
+            <h2 className="text-4xl font-bold gradient-text mb-4">آخر الإعلانات والأخبار</h2>
+            
+            <div className="max-w-md mx-auto mt-8 glass-card p-8 text-center">
+              <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
+                <Lock className="w-8 h-8 text-primary" />
+              </div>
+              <h3 className="text-xl font-bold mb-2">سجّل الدخول لمشاهدة الإعلانات</h3>
+              <p className="text-muted-foreground mb-6">
+                الإعلانات متاحة فقط للطلبة المسجلين في المنصة
+              </p>
+              <Link to="/auth">
+                <Button variant="hero" size="lg">
+                  تسجيل الدخول
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </div>
+      </section>
+    );
+  }
 
   if (loading) {
     return (
@@ -69,6 +111,10 @@ export function AnnouncementsSection() {
     return (
       <section className="py-20 bg-gradient-to-b from-background via-secondary/10 to-background">
         <div className="container mx-auto px-4 text-center">
+          <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-full text-sm font-medium mb-4">
+            <Bell className="w-4 h-4" />
+            <span>إعلانات</span>
+          </div>
           <p className="text-muted-foreground">لا توجد إعلانات حالياً</p>
         </div>
       </section>
