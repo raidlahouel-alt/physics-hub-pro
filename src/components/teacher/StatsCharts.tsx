@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
-import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip } from 'recharts';
-import { BookOpen, FileStack, ClipboardList, Users, TrendingUp } from 'lucide-react';
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
+import { Users, TrendingUp } from 'lucide-react';
 
 interface StatsChartsProps {
   stats: {
@@ -15,19 +15,14 @@ interface StatsChartsProps {
   };
 }
 
-const COLORS = ['hsl(221, 83%, 53%)', 'hsl(142, 76%, 36%)', 'hsl(25, 95%, 53%)', 'hsl(280, 67%, 53%)'];
+const COLORS = ['hsl(221, 83%, 53%)', 'hsl(142, 76%, 36%)', 'hsl(25, 95%, 53%)'];
 
 export function StatsCharts({ stats, studentsByLevel }: StatsChartsProps) {
   const contentData = useMemo(() => [
     { name: 'الدروس', value: stats.lessons, color: COLORS[0] },
     { name: 'الملخصات', value: stats.summaries, color: COLORS[1] },
     { name: 'التمارين', value: stats.exercises, color: COLORS[2] },
-  ], [stats]);
-
-  const studentData = useMemo(() => [
-    { name: 'البكالوريا', value: studentsByLevel.baccalaureate, fill: 'hsl(221, 83%, 53%)' },
-    { name: 'الثانية ثانوي', value: studentsByLevel.second_year, fill: 'hsl(280, 67%, 53%)' },
-  ], [studentsByLevel]);
+  ], [stats.lessons, stats.summaries, stats.exercises]);
 
   const totalContent = stats.lessons + stats.summaries + stats.exercises;
   const totalStudents = studentsByLevel.baccalaureate + studentsByLevel.second_year;
@@ -88,7 +83,7 @@ export function StatsCharts({ stats, studentsByLevel }: StatsChartsProps) {
         )}
       </div>
 
-      {/* Students by Level */}
+      {/* Students by Level - Simple bars instead of chart */}
       <div className="glass-card p-4">
         <div className="flex items-center gap-2 mb-3">
           <Users className="w-4 h-4 text-primary" />
@@ -97,30 +92,40 @@ export function StatsCharts({ stats, studentsByLevel }: StatsChartsProps) {
         </div>
         
         {totalStudents > 0 ? (
-          <div className="h-24">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={studentData} layout="vertical" margin={{ left: 0, right: 10 }}>
-                <XAxis type="number" hide />
-                <YAxis 
-                  dataKey="name" 
-                  type="category" 
-                  axisLine={false} 
-                  tickLine={false}
-                  tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
-                  width={80}
+          <div className="space-y-3">
+            {/* Baccalaureate */}
+            <div>
+              <div className="flex items-center justify-between text-xs mb-1">
+                <div className="flex items-center gap-2">
+                  <div className="w-2.5 h-2.5 rounded-full bg-primary" />
+                  <span>البكالوريا</span>
+                </div>
+                <span className="font-medium">{studentsByLevel.baccalaureate} طالب</span>
+              </div>
+              <div className="h-5 bg-secondary rounded-full overflow-hidden">
+                <div 
+                  className="h-full bg-primary rounded-full transition-all duration-500"
+                  style={{ width: `${totalStudents > 0 ? (studentsByLevel.baccalaureate / totalStudents) * 100 : 0}%` }}
                 />
-                <Tooltip 
-                  contentStyle={{ 
-                    backgroundColor: 'hsl(var(--background))', 
-                    border: '1px solid hsl(var(--border))',
-                    borderRadius: '8px',
-                    fontSize: '12px'
-                  }}
-                  formatter={(value) => [`${value} طالب`, '']}
+              </div>
+            </div>
+            
+            {/* Second Year */}
+            <div>
+              <div className="flex items-center justify-between text-xs mb-1">
+                <div className="flex items-center gap-2">
+                  <div className="w-2.5 h-2.5 rounded-full bg-accent" />
+                  <span>الثانية ثانوي</span>
+                </div>
+                <span className="font-medium">{studentsByLevel.second_year} طالب</span>
+              </div>
+              <div className="h-5 bg-secondary rounded-full overflow-hidden">
+                <div 
+                  className="h-full bg-accent rounded-full transition-all duration-500"
+                  style={{ width: `${totalStudents > 0 ? (studentsByLevel.second_year / totalStudents) * 100 : 0}%` }}
                 />
-                <Bar dataKey="value" radius={[0, 4, 4, 0]} barSize={20} />
-              </BarChart>
-            </ResponsiveContainer>
+              </div>
+            </div>
           </div>
         ) : (
           <p className="text-center text-muted-foreground text-sm py-4">لا يوجد طلاب</p>
