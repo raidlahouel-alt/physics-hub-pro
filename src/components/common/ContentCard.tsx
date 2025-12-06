@@ -61,7 +61,7 @@ export function ContentCard({ content }: ContentCardProps) {
           <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${config.bgGradient} flex items-center justify-center ${config.color} group-hover:scale-110 group-hover:rotate-6 transition-all duration-500`}>
             <Icon className="w-6 h-6" />
           </div>
-          {content.difficulty && (
+          {content.content_type === 'exercise' && content.difficulty && (
             <div className="transform group-hover:scale-110 transition-transform duration-300">
               <DifficultyStars difficulty={content.difficulty} />
             </div>
