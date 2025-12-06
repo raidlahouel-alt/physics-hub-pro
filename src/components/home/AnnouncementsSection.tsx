@@ -1,78 +1,97 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Announcement, StudentLevel } from '@/lib/types';
 import { Bell, Calendar, Megaphone, AlertTriangle, Info, ChevronLeft, Sparkles, Lock } from 'lucide-react';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import { Link } from 'react-router-dom';
-import { useScrollAnimation } from '@/hooks/useScrollAnimation';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 
 export function AnnouncementsSection() {
-  const { ref, isVisible } = useScrollAnimation(0.1);
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [loading, setLoading] = useState(true);
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
 
-  useEffect(() => {
-    const fetchAnnouncements = async () => {
-      // Only fetch if user is authenticated
-      if (!user) {
+  const fetchAnnouncements = useCallback(async () => {
+    if (!user) {
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('announcements')
+        .select('id, title, content, level, is_active, created_by, created_at')
+        .eq('is_active', true)
+        .order('created_at', { ascending: false })
+        .limit(5);
+
+      if (error) {
+        console.error('Error fetching announcements:', error);
         setLoading(false);
         return;
       }
-
-      try {
-        const { data, error } = await supabase
-          .from('announcements')
-          .select('id, title, content, level, is_active, created_by, created_at')
-          .eq('is_active', true)
-          .order('created_at', { ascending: false })
-          .limit(5);
-
-        if (error) {
-          console.error('Error fetching announcements:', error);
-          setLoading(false);
-          return;
-        }
-        
-        if (data) {
-          const formattedData: Announcement[] = data.map(item => ({
-            id: item.id,
-            title: item.title,
-            content: item.content,
-            level: item.level as StudentLevel | null,
-            is_active: item.is_active ?? true,
-            created_by: item.created_by,
-            created_at: item.created_at ?? ''
-          }));
-          setAnnouncements(formattedData);
-        }
-      } catch (err) {
-        console.error('Unexpected error:', err);
-      } finally {
-        setLoading(false);
+      
+      if (data) {
+        const formattedData: Announcement[] = data.map(item => ({
+          id: item.id,
+          title: item.title,
+          content: item.content,
+          level: item.level as StudentLevel | null,
+          is_active: item.is_active ?? true,
+          created_by: item.created_by,
+          created_at: item.created_at ?? ''
+        }));
+        setAnnouncements(formattedData);
       }
-    };
-
-    fetchAnnouncements();
+    } catch (err) {
+      console.error('Unexpected error:', err);
+    } finally {
+      setLoading(false);
+    }
   }, [user]);
 
+  useEffect(() => {
+    if (!authLoading) {
+      fetchAnnouncements();
+    }
+  }, [user, authLoading, fetchAnnouncements]);
+
+  // Subscribe to realtime updates for announcements
+  useEffect(() => {
+    if (!user) return;
+
+    const channel = supabase
+      .channel('announcements-changes')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'announcements' },
+        () => {
+          fetchAnnouncements();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user, fetchAnnouncements]);
+
   // Show login prompt for unauthenticated users
-  if (!user) {
+  if (!user && !authLoading) {
     return (
-      <section ref={ref} className="py-20 bg-gradient-to-b from-background via-secondary/10 to-background relative overflow-hidden">
-        <div className="absolute top-0 left-0 w-96 h-96 bg-primary/5 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2 animate-float" />
-        <div className="absolute bottom-0 right-0 w-96 h-96 bg-accent/5 rounded-full blur-3xl translate-x-1/2 translate-y-1/2 animate-float" style={{ animationDelay: '-3s' }} />
+      <section className="py-16 bg-gradient-to-b from-background via-secondary/10 to-background relative overflow-hidden">
+        <div className="absolute top-0 left-0 w-96 h-96 bg-primary/5 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2" />
+        <div className="absolute bottom-0 right-0 w-96 h-96 bg-accent/5 rounded-full blur-3xl translate-x-1/2 translate-y-1/2" />
         
         <div className="container mx-auto px-4 relative">
-          <div className={`text-center transition-all duration-700 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
+          <div className="text-center animate-fade-in">
             <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-full text-sm font-medium mb-4">
               <Bell className="w-4 h-4" />
               <span>إعلانات جديدة</span>
             </div>
-            <h2 className="text-4xl font-bold gradient-text mb-4">آخر الإعلانات والأخبار</h2>
+            <h2 className="text-3xl font-bold gradient-text mb-4">آخر الإعلانات والأخبار</h2>
             
             <div className="max-w-md mx-auto mt-8 glass-card p-8 text-center">
               <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
@@ -94,13 +113,13 @@ export function AnnouncementsSection() {
     );
   }
 
-  if (loading) {
+  if (loading || authLoading) {
     return (
-      <section className="py-20 bg-gradient-to-b from-background to-secondary/20">
+      <section className="py-16 bg-gradient-to-b from-background to-secondary/20">
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-center gap-3">
-            <div className="w-8 h-8 rounded-full border-2 border-primary border-t-transparent animate-spin" />
-            <span className="text-muted-foreground">جاري تحميل الإعلانات...</span>
+            <div className="w-6 h-6 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+            <span className="text-muted-foreground text-sm">جاري تحميل الإعلانات...</span>
           </div>
         </div>
       </section>
@@ -109,7 +128,7 @@ export function AnnouncementsSection() {
 
   if (announcements.length === 0) {
     return (
-      <section className="py-20 bg-gradient-to-b from-background via-secondary/10 to-background">
+      <section className="py-16 bg-gradient-to-b from-background via-secondary/10 to-background">
         <div className="container mx-auto px-4 text-center">
           <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-full text-sm font-medium mb-4">
             <Bell className="w-4 h-4" />
@@ -153,20 +172,19 @@ export function AnnouncementsSection() {
   };
 
   return (
-    <section ref={ref} className="py-20 bg-gradient-to-b from-background via-secondary/10 to-background relative overflow-hidden">
-      {/* Decorative elements */}
-      <div className="absolute top-0 left-0 w-96 h-96 bg-primary/5 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2 animate-float" />
-      <div className="absolute bottom-0 right-0 w-96 h-96 bg-accent/5 rounded-full blur-3xl translate-x-1/2 translate-y-1/2 animate-float" style={{ animationDelay: '-3s' }} />
+    <section className="py-16 bg-gradient-to-b from-background via-secondary/10 to-background relative overflow-hidden">
+      <div className="absolute top-0 left-0 w-64 h-64 bg-primary/5 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2" />
+      <div className="absolute bottom-0 right-0 w-64 h-64 bg-accent/5 rounded-full blur-3xl translate-x-1/2 translate-y-1/2" />
       
       <div className="container mx-auto px-4 relative">
-        <div className={`text-center mb-12 transition-all duration-700 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
-          <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-full text-sm font-medium mb-4 group cursor-default hover:bg-primary/20 transition-colors">
-            <Bell className="w-4 h-4 group-hover:animate-wiggle" />
+        <div className="text-center mb-10 animate-fade-in">
+          <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-full text-sm font-medium mb-4">
+            <Bell className="w-4 h-4" />
             <span>إعلانات جديدة</span>
             <Sparkles className="w-3 h-3 animate-pulse" />
           </div>
-          <h2 className="text-4xl font-bold gradient-text mb-4">آخر الإعلانات والأخبار</h2>
-          <p className="text-muted-foreground max-w-2xl mx-auto">
+          <h2 className="text-3xl font-bold gradient-text mb-3">آخر الإعلانات والأخبار</h2>
+          <p className="text-muted-foreground max-w-2xl mx-auto text-sm">
             تابع آخر المستجدات والإعلانات المهمة من الأستاذ هزيل رفيق
           </p>
         </div>
@@ -175,28 +193,25 @@ export function AnnouncementsSection() {
           {announcements.map((announcement, index) => (
             <div
               key={announcement.id}
-              className={`glass-card p-6 border-r-4 bg-gradient-to-l ${getAnnouncementColor(index)} group cursor-default relative overflow-hidden transition-all duration-500 ${
-                isVisible ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-8'
-              }`}
-              style={{ transitionDelay: `${index * 100}ms` }}
+              className={`glass-card p-5 border-r-4 bg-gradient-to-l ${getAnnouncementColor(index)} group cursor-default relative overflow-hidden animate-fade-in`}
+              style={{ animationDelay: `${index * 50}ms` }}
             >
-              {/* Shimmer effect on hover */}
-              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent transform -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent transform -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
               
               <div className="flex items-start gap-4 relative">
-                <div className={`w-12 h-12 rounded-xl ${getIconBgColor(index)} flex items-center justify-center flex-shrink-0 shadow-lg group-hover:scale-110 group-hover:rotate-6 transition-all duration-300`}>
+                <div className={`w-11 h-11 rounded-xl ${getIconBgColor(index)} flex items-center justify-center flex-shrink-0 shadow-lg group-hover:scale-105 transition-transform duration-200`}>
                   {getAnnouncementIcon(index)}
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-start justify-between gap-4 mb-2">
-                    <h3 className="font-bold text-lg text-foreground line-clamp-1 group-hover:text-primary transition-colors duration-300">{announcement.title}</h3>
-                    <span className="text-xs bg-secondary/80 px-3 py-1 rounded-full text-muted-foreground whitespace-nowrap group-hover:bg-secondary transition-colors">
+                    <h3 className="font-bold text-base text-foreground line-clamp-1 group-hover:text-primary transition-colors duration-200">{announcement.title}</h3>
+                    <span className="text-xs bg-secondary/80 px-2.5 py-1 rounded-full text-muted-foreground whitespace-nowrap">
                       {getLevelBadge(announcement.level)}
                     </span>
                   </div>
-                  <p className="text-muted-foreground mb-3 line-clamp-2 group-hover:text-foreground/70 transition-colors">{announcement.content}</p>
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground group-hover:text-muted-foreground/80 transition-colors">
-                    <Calendar className="w-3.5 h-3.5" />
+                  <p className="text-muted-foreground mb-2 text-sm line-clamp-2">{announcement.content}</p>
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <Calendar className="w-3 h-3" />
                     <span>
                       {announcement.created_at && format(new Date(announcement.created_at), 'EEEE، d MMMM yyyy', { locale: ar })}
                     </span>
@@ -208,10 +223,10 @@ export function AnnouncementsSection() {
         </div>
 
         {announcements.length >= 5 && (
-          <div className="text-center mt-8 animate-fade-in" style={{ animationDelay: '0.5s' }}>
+          <div className="text-center mt-6 animate-fade-in">
             <Link
               to="/announcements"
-              className="inline-flex items-center gap-2 text-primary hover:text-primary/80 font-medium transition-all duration-300 hover:gap-3 link-underline"
+              className="inline-flex items-center gap-2 text-primary hover:text-primary/80 font-medium transition-all duration-200 hover:gap-3"
             >
               عرض جميع الإعلانات
               <ChevronLeft className="w-4 h-4" />
