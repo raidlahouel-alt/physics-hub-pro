@@ -240,38 +240,53 @@ export default function TeacherDashboard() {
         toast({ title: 'تمت الإضافة بنجاح' });
       }
     } else if (contentFiles.length > 0) {
-      // Upload multiple files
-      let successCount = 0;
-      for (let i = 0; i < contentFiles.length; i++) {
-        const file = contentFiles[i];
+      // Upload all files and store URLs in file_urls array (single content with multiple files)
+      const uploadedUrls: string[] = [];
+      
+      for (const file of contentFiles) {
         const fileExt = file.name.split('.').pop() || '';
         const sanitizedName = `${Date.now()}-${Math.random().toString(36).substring(2, 8)}.${fileExt}`;
         const { error: uploadError } = await supabase.storage.from('content-files').upload(sanitizedName, file);
         
         if (!uploadError) {
           const { data } = await supabase.storage.from('content-files').createSignedUrl(sanitizedName, 60 * 60 * 24 * 365);
-          const fileUrl = data?.signedUrl || null;
-          
-          // Use file name as title for additional files
-          const title = contentFiles.length === 1 ? contentTitle.trim() : 
-                       i === 0 ? contentTitle.trim() : `${contentTitle.trim()} - ${file.name}`;
-          
-          const { error } = await supabase.from('content').insert({
-            title, 
-            description: contentDesc.trim() || null, 
-            content_type: contentType,
-            level: contentLevel, 
-            difficulty: contentDifficulty, 
-            file_url: fileUrl,
-            created_by: profile?.user_id
+          if (data?.signedUrl) {
+            uploadedUrls.push(data.signedUrl);
+          }
+        } else {
+          toast({
+            title: 'خطأ في رفع الملف',
+            description: `فشل رفع ${file.name}`,
+            variant: 'destructive'
           });
-          
-          if (!error) successCount++;
         }
       }
       
-      if (successCount > 0) {
-        toast({ title: `تمت إضافة ${successCount} محتوى بنجاح` });
+      if (uploadedUrls.length > 0) {
+        // Create single content with all files
+        const { error } = await supabase.from('content').insert({
+          title: contentTitle.trim(), 
+          description: contentDesc.trim() || null, 
+          content_type: contentType,
+          level: contentLevel, 
+          difficulty: contentDifficulty, 
+          file_url: uploadedUrls[0], // Keep first URL for backward compatibility
+          file_urls: uploadedUrls,
+          created_by: profile?.user_id
+        });
+        
+        if (!error) {
+          toast({ 
+            title: 'تمت الإضافة بنجاح', 
+            description: `تم رفع ${uploadedUrls.length} ملف في الدرس` 
+          });
+        } else {
+          toast({ 
+            title: 'خطأ في الإضافة', 
+            description: error.message,
+            variant: 'destructive' 
+          });
+        }
       }
     } else {
       // No file, just add content entry
@@ -282,6 +297,7 @@ export default function TeacherDashboard() {
         level: contentLevel, 
         difficulty: contentDifficulty, 
         file_url: null,
+        file_urls: [],
         created_by: profile?.user_id
       });
       

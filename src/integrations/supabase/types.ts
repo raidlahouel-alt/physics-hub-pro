@@ -100,6 +100,7 @@ export type Database = {
           description: string | null
           difficulty: number | null
           file_url: string | null
+          file_urls: Json | null
           id: string
           level: Database["public"]["Enums"]["student_level"]
           title: string
@@ -112,6 +113,7 @@ export type Database = {
           description?: string | null
           difficulty?: number | null
           file_url?: string | null
+          file_urls?: Json | null
           id?: string
           level: Database["public"]["Enums"]["student_level"]
           title: string
@@ -124,6 +126,7 @@ export type Database = {
           description?: string | null
           difficulty?: number | null
           file_url?: string | null
+          file_urls?: Json | null
           id?: string
           level?: Database["public"]["Enums"]["student_level"]
           title?: string

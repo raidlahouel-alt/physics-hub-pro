@@ -1,4 +1,5 @@
 import { BookOpen, Bell, FileText, Star, Zap, Users } from 'lucide-react';
+import { useScrollAnimation } from '@/hooks/useScrollAnimation';
 
 const features = [
   {
@@ -34,13 +35,15 @@ const features = [
 ];
 
 export function FeaturesSection() {
+  const { ref, isVisible } = useScrollAnimation(0.1);
+
   return (
-    <section className="py-20 relative particles">
+    <section ref={ref} className="py-20 relative particles">
       <div className="absolute inset-0 hero-gradient opacity-50" />
       
       <div className="container mx-auto px-4 relative z-10">
-        <div className="text-center mb-16">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 mb-6 animate-bounce-in">
+        <div className={`text-center mb-16 transition-all duration-700 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 mb-6">
             <Zap className="w-4 h-4 text-primary animate-pulse" />
             <span className="text-sm text-primary">مميزات حصرية</span>
           </div>
@@ -56,8 +59,10 @@ export function FeaturesSection() {
           {features.map((feature, index) => (
             <div
               key={index}
-              className="glass-card p-6 group cursor-pointer icon-bounce animate-slide-up relative overflow-hidden"
-              style={{ animationDelay: `${index * 0.1}s` }}
+              className={`glass-card p-6 group cursor-pointer icon-bounce relative overflow-hidden transition-all duration-500 ${
+                isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+              }`}
+              style={{ transitionDelay: `${index * 100}ms` }}
             >
               {/* Hover gradient overlay */}
               <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-primary/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />

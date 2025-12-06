@@ -5,8 +5,10 @@ import { Bell, Calendar, Megaphone, AlertTriangle, Info, ChevronLeft, Sparkles }
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import { Link } from 'react-router-dom';
+import { useScrollAnimation } from '@/hooks/useScrollAnimation';
 
 export function AnnouncementsSection() {
+  const { ref, isVisible } = useScrollAnimation(0.1);
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -77,20 +79,20 @@ export function AnnouncementsSection() {
   };
 
   return (
-    <section className="py-20 bg-gradient-to-b from-background via-secondary/10 to-background relative overflow-hidden">
+    <section ref={ref} className="py-20 bg-gradient-to-b from-background via-secondary/10 to-background relative overflow-hidden">
       {/* Decorative elements */}
       <div className="absolute top-0 left-0 w-96 h-96 bg-primary/5 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2 animate-float" />
       <div className="absolute bottom-0 right-0 w-96 h-96 bg-accent/5 rounded-full blur-3xl translate-x-1/2 translate-y-1/2 animate-float" style={{ animationDelay: '-3s' }} />
       
       <div className="container mx-auto px-4 relative">
-        <div className="text-center mb-12">
-          <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-full text-sm font-medium mb-4 animate-bounce-in group cursor-default hover:bg-primary/20 transition-colors">
+        <div className={`text-center mb-12 transition-all duration-700 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
+          <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-full text-sm font-medium mb-4 group cursor-default hover:bg-primary/20 transition-colors">
             <Bell className="w-4 h-4 group-hover:animate-wiggle" />
             <span>إعلانات جديدة</span>
             <Sparkles className="w-3 h-3 animate-pulse" />
           </div>
-          <h2 className="text-4xl font-bold gradient-text mb-4 animate-slide-up">آخر الإعلانات والأخبار</h2>
-          <p className="text-muted-foreground max-w-2xl mx-auto animate-slide-up" style={{ animationDelay: '0.1s' }}>
+          <h2 className="text-4xl font-bold gradient-text mb-4">آخر الإعلانات والأخبار</h2>
+          <p className="text-muted-foreground max-w-2xl mx-auto">
             تابع آخر المستجدات والإعلانات المهمة من الأستاذ هزيل رفيق
           </p>
         </div>
@@ -99,8 +101,10 @@ export function AnnouncementsSection() {
           {announcements.map((announcement, index) => (
             <div
               key={announcement.id}
-              className={`glass-card p-6 border-r-4 bg-gradient-to-l ${getAnnouncementColor(index)} group cursor-default animate-slide-up relative overflow-hidden`}
-              style={{ animationDelay: `${index * 0.1}s` }}
+              className={`glass-card p-6 border-r-4 bg-gradient-to-l ${getAnnouncementColor(index)} group cursor-default relative overflow-hidden transition-all duration-500 ${
+                isVisible ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-8'
+              }`}
+              style={{ transitionDelay: `${index * 100}ms` }}
             >
               {/* Shimmer effect on hover */}
               <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent transform -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
