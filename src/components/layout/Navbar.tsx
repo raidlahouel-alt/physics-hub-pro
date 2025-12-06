@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
+import { useUnansweredQuestions } from '@/hooks/useUnansweredQuestions';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { NotificationBell } from '@/components/notifications/NotificationBell';
 import { Menu, X, BookOpen, User, LogOut, LayoutDashboard, Shield, HelpCircle } from 'lucide-react';
@@ -10,6 +11,7 @@ export function Navbar() {
   const { user, profile, signOut, isTeacher } = useAuth();
   const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
+  const unansweredCount = useUnansweredQuestions(isTeacher);
 
   const handleSignOut = async () => {
     await signOut();
@@ -54,10 +56,15 @@ export function Navbar() {
                         لوحة التحكم
                       </Link>
                     </Button>
-                    <Button variant="outline" size="sm" asChild>
+                    <Button variant="outline" size="sm" asChild className="relative">
                       <Link to="/teacher-questions">
                         <HelpCircle className="w-4 h-4 ml-2" />
                         الأسئلة
+                        {unansweredCount > 0 && (
+                          <span className="absolute -top-1 -left-1 w-5 h-5 bg-destructive text-destructive-foreground text-xs rounded-full flex items-center justify-center font-bold animate-pulse">
+                            {unansweredCount > 9 ? '9+' : unansweredCount}
+                          </span>
+                        )}
                       </Link>
                     </Button>
                     <Button variant="outline" size="sm" asChild>
@@ -123,8 +130,13 @@ export function Navbar() {
                       <Link to="/teacher" className="py-2 text-primary" onClick={() => setIsOpen(false)}>
                         لوحة التحكم
                       </Link>
-                      <Link to="/teacher-questions" className="py-2 text-primary" onClick={() => setIsOpen(false)}>
+                      <Link to="/teacher-questions" className="py-2 text-primary flex items-center gap-2" onClick={() => setIsOpen(false)}>
                         الأسئلة
+                        {unansweredCount > 0 && (
+                          <span className="w-5 h-5 bg-destructive text-destructive-foreground text-xs rounded-full flex items-center justify-center font-bold">
+                            {unansweredCount > 9 ? '9+' : unansweredCount}
+                          </span>
+                        )}
                       </Link>
                       <Link to="/manage-teachers" className="py-2 text-primary" onClick={() => setIsOpen(false)}>
                         إدارة المعلمين
