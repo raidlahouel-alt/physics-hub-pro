@@ -1,15 +1,22 @@
 @import '@fontsource/cairo/400.css';
-@import '@fontsource/cairo/500.css';
 @import '@fontsource/cairo/600.css';
 @import '@fontsource/cairo/700.css';
 @import '@fontsource/outfit/400.css';
-@import '@fontsource/outfit/500.css';
 @import '@fontsource/outfit/600.css';
 @import '@fontsource/outfit/700.css';
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Hide scrollbar for tabs */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
 
 @layer base {
   :root {
