@@ -38,51 +38,47 @@ export function FeaturesSection() {
   const { ref, isVisible } = useScrollAnimation(0.1);
 
   return (
-    <section ref={ref} className="py-20 relative particles">
-      <div className="absolute inset-0 hero-gradient opacity-50" />
-      
+    <section ref={ref} className="py-24 relative">
       <div className="container mx-auto px-4 relative z-10">
-        <div className={`text-center mb-16 transition-all duration-700 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 mb-6">
-            <Zap className="w-4 h-4 text-primary animate-pulse" />
-            <span className="text-sm text-primary">مميزات حصرية</span>
+        <div className={`text-center mb-14 transition-all duration-700 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}>
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/8 border border-primary/15 mb-5">
+            <Zap className="w-3.5 h-3.5 text-primary" />
+            <span className="text-xs font-medium text-primary">مميزات حصرية</span>
           </div>
-          <h2 className="text-3xl md:text-4xl font-bold mb-4">
+          <h2 className="text-3xl md:text-4xl font-bold mb-3">
             <span className="gradient-text">لماذا تختار منصتنا؟</span>
           </h2>
-          <p className="text-muted-foreground max-w-2xl mx-auto">
+          <p className="text-muted-foreground max-w-lg mx-auto text-sm">
             منصة متكاملة توفر لك كل ما تحتاجه للتفوق في مادة الفيزياء
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5">
           {features.map((feature, index) => (
             <div
               key={index}
-              className={`glass-card p-6 group cursor-pointer icon-bounce relative overflow-hidden transition-all duration-500 ${
-                isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+              className={`glass-card p-6 group cursor-default relative overflow-hidden transition-all duration-500 ${
+                isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'
               }`}
-              style={{ transitionDelay: `${index * 100}ms` }}
+              style={{ transitionDelay: `${index * 80}ms` }}
             >
-              {/* Hover gradient overlay */}
-              <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-primary/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+              {/* Hover overlay */}
+              <div className="absolute inset-0 bg-gradient-to-br from-primary/3 to-accent/3 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
               
-              {/* Icon container with blue gradient border */}
-              <div className="relative w-14 h-14 rounded-xl bg-gradient-to-br from-primary to-accent p-[2px] mb-4 group-hover:scale-110 group-hover:rotate-3 transition-all duration-500">
-                <div className="w-full h-full rounded-xl bg-card flex items-center justify-center">
-                  <feature.icon className="w-6 h-6 text-primary" />
-                </div>
+              {/* Icon */}
+              <div className="relative w-11 h-11 rounded-xl bg-primary/8 flex items-center justify-center mb-4 group-hover:bg-primary/12 group-hover:scale-105 transition-all duration-400">
+                <feature.icon className="w-5 h-5 text-primary" />
               </div>
               
-              <h3 className="text-xl font-semibold mb-2 text-foreground group-hover:text-primary transition-colors duration-300 relative">
+              <h3 className="text-lg font-semibold mb-1.5 text-foreground group-hover:text-primary transition-colors duration-300 relative">
                 {feature.title}
               </h3>
-              <p className="text-muted-foreground text-sm relative">
+              <p className="text-muted-foreground text-sm leading-relaxed relative">
                 {feature.description}
               </p>
 
-              {/* Bottom line animation - blue gradient */}
-              <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-primary to-accent transform scale-x-0 group-hover:scale-x-100 transition-transform duration-500 origin-right" />
+              {/* Bottom accent */}
+              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-primary to-accent transform scale-x-0 group-hover:scale-x-100 transition-transform duration-500 origin-right" />
             </div>
           ))}
         </div>
