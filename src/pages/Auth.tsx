@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { StudentLevel } from '@/lib/types';
-import { Loader2, BookOpen, Mail, Lock, User, Phone, GraduationCap, Eye, EyeOff } from 'lucide-react';
+import { Loader2, Atom, Mail, Lock, User, Phone, GraduationCap, Eye, EyeOff } from 'lucide-react';
 import { z } from 'zod';
 
 const loginSchema = z.object({
@@ -40,9 +40,7 @@ export default function Auth() {
   const { toast } = useToast();
 
   useEffect(() => {
-    if (user) {
-      navigate('/');
-    }
+    if (user) navigate('/');
   }, [user, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -55,67 +53,39 @@ export default function Auth() {
         const result = loginSchema.safeParse({ email, password });
         if (!result.success) {
           const fieldErrors: Record<string, string> = {};
-          result.error.errors.forEach(err => {
-            fieldErrors[err.path[0]] = err.message;
-          });
+          result.error.errors.forEach(err => { fieldErrors[err.path[0]] = err.message; });
           setErrors(fieldErrors);
           setLoading(false);
           return;
         }
-
         const { error } = await signIn(email, password);
         if (error) {
-          toast({
-            title: 'خطأ في تسجيل الدخول',
-            description: error.message === 'Invalid login credentials' 
-              ? 'البريد الإلكتروني أو كلمة المرور غير صحيحة'
-              : error.message,
-            variant: 'destructive',
-          });
+          toast({ title: 'خطأ في تسجيل الدخول', description: error.message === 'Invalid login credentials' ? 'البريد الإلكتروني أو كلمة المرور غير صحيحة' : error.message, variant: 'destructive' });
         } else {
-          toast({
-            title: 'مرحباً بك!',
-            description: 'تم تسجيل الدخول بنجاح',
-          });
+          toast({ title: 'مرحباً بك!', description: 'تم تسجيل الدخول بنجاح' });
           navigate('/');
         }
       } else {
         const result = signupSchema.safeParse({ email, password, fullName, phone, level });
         if (!result.success) {
           const fieldErrors: Record<string, string> = {};
-          result.error.errors.forEach(err => {
-            fieldErrors[err.path[0]] = err.message;
-          });
+          result.error.errors.forEach(err => { fieldErrors[err.path[0]] = err.message; });
           setErrors(fieldErrors);
           setLoading(false);
           return;
         }
-
         const { error } = await signUp(email, password, fullName, phone, level as StudentLevel);
         if (error) {
           let message = error.message;
-          if (error.message.includes('already registered')) {
-            message = 'هذا البريد الإلكتروني مسجل مسبقاً';
-          }
-          toast({
-            title: 'خطأ في إنشاء الحساب',
-            description: message,
-            variant: 'destructive',
-          });
+          if (error.message.includes('already registered')) message = 'هذا البريد الإلكتروني مسجل مسبقاً';
+          toast({ title: 'خطأ في إنشاء الحساب', description: message, variant: 'destructive' });
         } else {
-          toast({
-            title: 'تم إنشاء الحساب!',
-            description: 'مرحباً بك في منصة الأستاذ هزيل رفيق',
-          });
+          toast({ title: 'تم إنشاء الحساب!', description: 'مرحباً بك في منصة الأستاذ هزيل رفيق' });
           navigate('/');
         }
       }
     } catch {
-      toast({
-        title: 'خطأ',
-        description: 'حدث خطأ غير متوقع',
-        variant: 'destructive',
-      });
+      toast({ title: 'خطأ', description: 'حدث خطأ غير متوقع', variant: 'destructive' });
     } finally {
       setLoading(false);
     }
@@ -123,17 +93,22 @@ export default function Auth() {
 
   return (
     <Layout showFooter={false}>
-      <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center py-12 px-4">
-        <div className="w-full max-w-md">
+      <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center py-12 px-4 relative overflow-hidden">
+        {/* Cosmic background */}
+        <div className="absolute inset-0 hero-gradient" />
+        <div className="absolute top-1/3 right-1/4 w-[400px] h-[400px] bg-primary/6 rounded-full blur-[120px] animate-float" />
+        <div className="absolute bottom-1/3 left-1/4 w-[300px] h-[300px] rounded-full blur-[100px] animate-float" style={{ animationDelay: '-3s', background: 'hsl(280 75% 65% / 0.04)' }} />
+
+        <div className="w-full max-w-md relative z-10">
           {/* Logo */}
           <div className="text-center mb-8">
-            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary to-accent flex items-center justify-center mx-auto mb-4">
-              <BookOpen className="w-8 h-8 text-primary-foreground" />
+            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary via-accent to-primary flex items-center justify-center mx-auto mb-4 animate-gradient glow-effect">
+              <Atom className="w-8 h-8 text-primary-foreground" />
             </div>
             <h1 className="text-2xl font-bold gradient-text">
               {isLogin ? 'تسجيل الدخول' : 'إنشاء حساب جديد'}
             </h1>
-            <p className="text-muted-foreground mt-2">
+            <p className="text-muted-foreground mt-2 text-sm">
               {isLogin ? 'أهلاً بعودتك!' : 'انضم إلينا وابدأ رحلة التعلم'}
             </p>
           </div>
@@ -146,18 +121,9 @@ export default function Auth() {
                   <Label htmlFor="fullName">الاسم الكامل</Label>
                   <div className="relative">
                     <User className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-                    <Input
-                      id="fullName"
-                      type="text"
-                      value={fullName}
-                      onChange={(e) => setFullName(e.target.value)}
-                      placeholder="محمد أحمد"
-                      className="pr-10"
-                    />
+                    <Input id="fullName" type="text" value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="محمد أحمد" className="pr-10" />
                   </div>
-                  {errors.fullName && (
-                    <p className="text-sm text-destructive">{errors.fullName}</p>
-                  )}
+                  {errors.fullName && <p className="text-sm text-destructive">{errors.fullName}</p>}
                 </div>
               )}
 
@@ -165,45 +131,21 @@ export default function Auth() {
                 <Label htmlFor="email">البريد الإلكتروني</Label>
                 <div className="relative">
                   <Mail className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-                  <Input
-                    id="email"
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="example@gmail.com"
-                    className="pr-10"
-                    dir="ltr"
-                  />
+                  <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="example@gmail.com" className="pr-10" dir="ltr" />
                 </div>
-                {errors.email && (
-                  <p className="text-sm text-destructive">{errors.email}</p>
-                )}
+                {errors.email && <p className="text-sm text-destructive">{errors.email}</p>}
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="password">كلمة المرور</Label>
                 <div className="relative">
                   <Lock className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-                  <Input
-                    id="password"
-                    type={showPassword ? "text" : "password"}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="••••••••"
-                    className="pr-10 pl-10"
-                    dir="ltr"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                  >
+                  <Input id="password" type={showPassword ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" className="pr-10 pl-10" dir="ltr" />
+                  <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors">
                     {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                   </button>
                 </div>
-                {errors.password && (
-                  <p className="text-sm text-destructive">{errors.password}</p>
-                )}
+                {errors.password && <p className="text-sm text-destructive">{errors.password}</p>}
               </div>
 
               {!isLogin && (
@@ -212,39 +154,22 @@ export default function Auth() {
                     <Label htmlFor="phone">رقم الهاتف</Label>
                     <div className="relative">
                       <Phone className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-                      <Input
-                        id="phone"
-                        type="tel"
-                        value={phone}
-                        onChange={(e) => setPhone(e.target.value)}
-                        placeholder="0555123456"
-                        className="pr-10"
-                        dir="ltr"
-                      />
+                      <Input id="phone" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="0555123456" className="pr-10" dir="ltr" />
                     </div>
-                    {errors.phone && (
-                      <p className="text-sm text-destructive">{errors.phone}</p>
-                    )}
+                    {errors.phone && <p className="text-sm text-destructive">{errors.phone}</p>}
                   </div>
 
                   <div className="space-y-2">
                     <Label htmlFor="level">المستوى الدراسي *</Label>
                     <div className="relative">
                       <GraduationCap className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground pointer-events-none" />
-                      <select
-                        id="level"
-                        value={level}
-                        onChange={(e) => setLevel(e.target.value as StudentLevel)}
-                        className="w-full h-10 pr-10 pl-3 rounded-lg border border-input bg-background text-foreground"
-                      >
+                      <select id="level" value={level} onChange={(e) => setLevel(e.target.value as StudentLevel)} className="w-full h-10 pr-10 pl-3 rounded-lg border border-input bg-background text-foreground">
                         <option value="">اختر المستوى</option>
                         <option value="second_year">السنة الثانية ثانوي</option>
                         <option value="baccalaureate">البكالوريا</option>
                       </select>
                     </div>
-                    {errors.level && (
-                      <p className="text-sm text-destructive">{errors.level}</p>
-                    )}
+                    {errors.level && <p className="text-sm text-destructive">{errors.level}</p>}
                   </div>
                 </>
               )}
@@ -256,11 +181,7 @@ export default function Auth() {
             </form>
 
             <div className="mt-6 text-center">
-              <button
-                type="button"
-                onClick={() => setIsLogin(!isLogin)}
-                className="text-primary hover:underline text-sm"
-              >
+              <button type="button" onClick={() => setIsLogin(!isLogin)} className="text-primary hover:underline text-sm">
                 {isLogin ? 'ليس لديك حساب؟ سجّل الآن' : 'لديك حساب؟ سجّل الدخول'}
               </button>
             </div>

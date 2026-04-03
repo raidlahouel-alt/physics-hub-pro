@@ -5,7 +5,7 @@ export function GlobalLoader() {
   const location = useLocation();
   const [progress, setProgress] = useState(0);
   const [visible, setVisible] = useState(false);
-  const timeoutRef = useRef<NodeJS.Timeout>();
+  const timeoutRef = useRef<ReturnType<typeof setTimeout>>();
 
   useEffect(() => {
     // Start loading
