@@ -5,7 +5,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useUnansweredQuestions } from '@/hooks/useUnansweredQuestions';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { NotificationBell } from '@/components/notifications/NotificationBell';
-import { Menu, X, BookOpen, User, LogOut, LayoutDashboard, Shield, HelpCircle, ChevronLeft } from 'lucide-react';
+import { Menu, X, Atom, User, LogOut, LayoutDashboard, Shield, HelpCircle, ChevronLeft } from 'lucide-react';
 
 export function Navbar() {
   const { user, profile, signOut, isTeacher } = useAuth();
@@ -21,7 +21,6 @@ export function Navbar() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Close mobile menu on route change
   useEffect(() => {
     setIsOpen(false);
   }, [location.pathname]);
@@ -36,15 +35,15 @@ export function Navbar() {
   return (
     <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
       scrolled 
-        ? 'bg-background/80 backdrop-blur-2xl border-b border-border/40 shadow-sm' 
+        ? 'bg-background/70 backdrop-blur-2xl border-b border-border/30 shadow-sm' 
         : 'bg-transparent backdrop-blur-none border-b border-transparent'
     }`}>
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2.5 group">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-sm group-hover:shadow-md group-hover:scale-105 transition-all duration-300">
-              <BookOpen className="w-5 h-5 text-primary-foreground" />
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary via-accent to-primary flex items-center justify-center shadow-sm group-hover:shadow-md group-hover:scale-105 transition-all duration-300 animate-gradient">
+              <Atom className="w-5 h-5 text-primary-foreground" />
             </div>
             <span className="text-lg font-bold gradient-text">أ. هزيل رفيق</span>
           </Link>
