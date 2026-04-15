@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { Content, StudentLevel, ContentType } from '@/lib/types';
 import { useAuth } from '@/hooks/useAuth';
-import { Loader2, BookOpen, FileText, ClipboardList, ArrowRight, Lock } from 'lucide-react';
+import { Loader2, BookOpen, FileText, ClipboardList, ArrowRight, Lock, Atom } from 'lucide-react';
 import { QuestionBox } from '@/components/comments/QuestionBox';
 
 const levelNames: Record<string, string> = {
@@ -54,7 +54,6 @@ export default function ContentPage() {
     }
   }, [level, activeType, user]);
 
-  // Show loading while checking auth
   if (authLoading) {
     return (
       <Layout>
@@ -65,14 +64,13 @@ export default function ContentPage() {
     );
   }
 
-  // Redirect to auth if not logged in
   if (!user) {
     return (
       <Layout>
         <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center py-20">
           <div className="text-center max-w-md mx-auto px-4">
-            <div className="w-20 h-20 rounded-full bg-secondary flex items-center justify-center mx-auto mb-6">
-              <Lock className="w-10 h-10 text-muted-foreground" />
+            <div className="w-20 h-20 rounded-2xl bg-primary/8 flex items-center justify-center mx-auto mb-6">
+              <Lock className="w-10 h-10 text-primary/60" />
             </div>
             <h2 className="text-2xl font-bold mb-4">يجب تسجيل الدخول</h2>
             <p className="text-muted-foreground mb-6">
@@ -89,39 +87,66 @@ export default function ContentPage() {
 
   return (
     <Layout>
-      <div className="min-h-[calc(100vh-4rem)] py-20">
-        <div className="container mx-auto px-4">
-          <div className="flex items-center gap-2 text-sm text-muted-foreground mb-8">
-            <Link to="/levels" className="hover:text-foreground transition-colors">المستويات</Link>
+      <div className="min-h-[calc(100vh-4rem)] py-20 relative overflow-hidden">
+        {/* Cosmic background */}
+        <div className="absolute top-1/3 right-1/5 w-[350px] h-[350px] bg-primary/5 rounded-full blur-[120px] animate-float pointer-events-none" />
+        <div className="absolute bottom-1/3 left-1/5 w-[250px] h-[250px] rounded-full blur-[100px] animate-float pointer-events-none" style={{ animationDelay: '-4s', background: 'hsl(280 75% 65% / 0.04)' }} />
+
+        <div className="container mx-auto px-4 relative z-10">
+          {/* Breadcrumb */}
+          <div className="flex items-center gap-2 text-sm text-muted-foreground mb-8 animate-fade-in">
+            <Link to="/levels" className="hover:text-primary transition-colors">المستويات</Link>
             <ArrowRight className="w-4 h-4" />
             <span className="text-foreground">{level ? levelNames[level] : ''}</span>
           </div>
 
+          {/* Header */}
           <div className="text-center mb-12">
-            <h1 className="text-3xl md:text-4xl font-bold mb-4">
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/8 border border-primary/15 mb-5 animate-bounce-in">
+              <Atom className="w-3.5 h-3.5 text-primary" />
+              <span className="text-xs font-medium text-primary">{level ? levelNames[level] : ''}</span>
+            </div>
+            <h1 className="text-3xl md:text-4xl font-bold animate-slide-up">
               <span className="gradient-text">{level ? levelNames[level] : ''}</span>
             </h1>
           </div>
 
-          <div className="flex flex-wrap items-center justify-center gap-3 mb-12">
-            <Button variant={activeType === 'all' ? 'default' : 'outline'} onClick={() => setActiveType('all')}>الكل</Button>
+          {/* Filter buttons */}
+          <div className="flex flex-wrap items-center justify-center gap-3 mb-12 animate-slide-up" style={{ animationDelay: '0.1s' }}>
+            <Button 
+              variant={activeType === 'all' ? 'default' : 'outline'} 
+              onClick={() => setActiveType('all')}
+              className="rounded-xl"
+            >
+              الكل
+            </Button>
             {contentTypes.map((item) => (
-              <Button key={item.type} variant={activeType === item.type ? 'default' : 'outline'} onClick={() => setActiveType(item.type)}>
+              <Button 
+                key={item.type} 
+                variant={activeType === item.type ? 'default' : 'outline'} 
+                onClick={() => setActiveType(item.type)}
+                className="rounded-xl"
+              >
                 <item.icon className="w-4 h-4 ml-2" />{item.label}
               </Button>
             ))}
           </div>
 
+          {/* Content */}
           {loading ? (
-            <div className="flex items-center justify-center py-20"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>
+            <div className="flex items-center justify-center py-20">
+              <Loader2 className="w-8 h-8 animate-spin text-primary" />
+            </div>
           ) : contents.length === 0 ? (
             <div className="text-center py-20">
-              <div className="w-20 h-20 rounded-full bg-secondary flex items-center justify-center mx-auto mb-4"><BookOpen className="w-10 h-10 text-muted-foreground" /></div>
+              <div className="w-20 h-20 rounded-2xl bg-primary/8 flex items-center justify-center mx-auto mb-4">
+                <BookOpen className="w-10 h-10 text-primary/60" />
+              </div>
               <h3 className="text-xl font-semibold text-foreground mb-2">لا يوجد محتوى بعد</h3>
-              <p className="text-muted-foreground">سيتم إضافة الدروس قريباً</p>
+              <p className="text-muted-foreground text-sm">سيتم إضافة الدروس قريباً</p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
               {contents.map((content, index) => (
                 <div key={content.id} className="animate-slide-up" style={{ animationDelay: `${index * 0.05}s` }}>
                   <ContentCard content={content} />
@@ -130,7 +155,7 @@ export default function ContentPage() {
             </div>
           )}
 
-          {/* Question Box - Ask the Teacher (at bottom) */}
+          {/* Question Box */}
           <div className="mt-12">
             <QuestionBox />
           </div>

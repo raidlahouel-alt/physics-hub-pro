@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { StudentLevel } from '@/lib/types';
-import { User, Phone, GraduationCap, Loader2 } from 'lucide-react';
+import { User, Phone, GraduationCap, Loader2, Atom } from 'lucide-react';
 
 const levelOptions: { value: StudentLevel; label: string }[] = [
   { value: 'second_year', label: 'السنة الثانية ثانوي' },
@@ -57,19 +57,26 @@ export default function Profile() {
 
   return (
     <Layout>
-      <div className="min-h-[calc(100vh-4rem)] py-20">
-        <div className="container mx-auto px-4">
+      <div className="min-h-[calc(100vh-4rem)] py-20 relative overflow-hidden">
+        {/* Cosmic background */}
+        <div className="absolute top-1/4 right-1/3 w-[350px] h-[350px] bg-primary/5 rounded-full blur-[120px] animate-float pointer-events-none" />
+        <div className="absolute bottom-1/4 left-1/3 w-[250px] h-[250px] rounded-full blur-[100px] animate-float pointer-events-none" style={{ animationDelay: '-3s', background: 'hsl(280 75% 65% / 0.04)' }} />
+
+        <div className="container mx-auto px-4 relative z-10">
           <div className="max-w-2xl mx-auto">
             {/* Header */}
             <div className="text-center mb-10">
-              <div className="w-16 h-16 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center mx-auto mb-4">
-                <User className="w-8 h-8 text-primary-foreground" />
+              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary via-accent to-primary flex items-center justify-center mx-auto mb-4 animate-gradient glow-effect">
+                <Atom className="w-8 h-8 text-primary-foreground" />
               </div>
-              <h1 className="text-3xl font-bold gradient-text">الملف الشخصي</h1>
+              <h1 className="text-3xl font-bold gradient-text animate-slide-up">الملف الشخصي</h1>
+              <p className="text-muted-foreground text-sm mt-2 animate-slide-up" style={{ animationDelay: '0.1s' }}>
+                قم بتحديث معلوماتك الشخصية
+              </p>
             </div>
 
             {/* Profile Form */}
-            <div className="glass-card p-6">
+            <div className="glass-card p-6 md:p-8 animate-slide-up" style={{ animationDelay: '0.15s' }}>
               <h2 className="font-semibold text-foreground mb-6">معلوماتك الشخصية</h2>
               <form onSubmit={handleSubmit} className="space-y-5">
                 <div className="space-y-2">
@@ -108,7 +115,7 @@ export default function Profile() {
                       id="level"
                       value={level}
                       onChange={(e) => setLevel(e.target.value as StudentLevel)}
-                      className="w-full h-10 pr-10 pl-3 rounded-lg border border-border bg-secondary text-foreground"
+                      className="w-full h-10 pr-10 pl-3 rounded-xl border border-border bg-secondary text-foreground transition-colors focus:border-primary/50 focus:ring-1 focus:ring-primary/20"
                     >
                       <option value="">اختر المستوى</option>
                       {levelOptions.map((opt) => (
