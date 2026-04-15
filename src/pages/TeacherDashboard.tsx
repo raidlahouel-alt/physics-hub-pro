@@ -281,6 +281,7 @@ export default function TeacherDashboard() {
       toast({ title: 'تم نشر الإعلان' });
       setAnnTitle(''); setAnnContent(''); setAnnLevel(''); setAnnScheduledDate('');
       fetchStats();
+      fetchAnnouncements();
     } else {
       toast({ title: 'خطأ في النشر', description: error.message, variant: 'destructive' });
     }
