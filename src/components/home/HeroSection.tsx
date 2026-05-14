@@ -4,9 +4,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import {
-  GraduationCap,
   ArrowLeft,
-  Atom,
   FlaskConical,
   Sparkles,
   Rocket,
