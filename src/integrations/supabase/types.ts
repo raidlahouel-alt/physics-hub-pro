@@ -178,6 +178,39 @@ export type Database = {
           },
         ]
       }
+      platform_ratings: {
+        Row: {
+          comment: string | null
+          created_at: string
+          id: string
+          rater_name: string
+          rating: number
+          target: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          comment?: string | null
+          created_at?: string
+          id?: string
+          rater_name: string
+          rating: number
+          target?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          comment?: string | null
+          created_at?: string
+          id?: string
+          rater_name?: string
+          rating?: number
+          target?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string | null
