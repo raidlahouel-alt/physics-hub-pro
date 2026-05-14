@@ -22,10 +22,12 @@ export function AnnouncementsSection() {
     }
 
     try {
+      const today = new Date().toISOString().split('T')[0];
       const { data, error } = await supabase
         .from('announcements')
         .select('id, title, content, level, is_active, created_by, created_at, scheduled_date')
         .eq('is_active', true)
+        .or(`scheduled_date.is.null,scheduled_date.lte.${today}`)
         .order('created_at', { ascending: false })
         .limit(5);
 
